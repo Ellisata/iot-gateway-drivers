@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drivers:
+    name: Drivers (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # SDK 与 testkit 是已发布的 Go 模块，由 go.mod 按版本拉取，不需要再 checkout。
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt required for:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test -count=1 -timeout 20m ./...
+
+      - name: Build every driver
+        run: |
+          ./build.sh /tmp/plugins
+          expected=$(find . -mindepth 2 -maxdepth 2 -name main.go | wc -l)
+          actual=$(find /tmp/plugins -maxdepth 1 -type f -name 'iot-driver-*' | wc -l)
+          echo "expected=$expected actual=$actual"
+          [ "$actual" -eq "$expected" ] || { echo "missing driver binaries"; exit 1; }
