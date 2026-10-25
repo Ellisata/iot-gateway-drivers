@@ -31,7 +31,7 @@ remain AGPL-3.0.
 | `dlt645/` | DLT645.Serial / DLT645.TCP |
 
 Tests use the fake PLC servers from the SDK's
-[`testkit`](https://github.com/Ellisata/iot-gateway-sdk/tree/master/testkit)
+[`testkit`](https://github.com/Ellisata/iot-gateway-sdk/tree/main/testkit)
 module; they are not part of this repository.
 
 ## Build
