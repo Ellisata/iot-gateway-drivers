@@ -111,6 +111,13 @@ This repository is tagged independently (e.g. `v0.1.0`). The gateway release
 pins a driver tag and packages the matching plugin binaries. Do not mix
 arbitrary gateway and driver versions in production.
 
+**The driver version does not participate in the runtime compatibility
+decision** — only `APIVersion` does. Drivers v0.1.0 are built with SDK v0.1.0
+and `APIVersion = 4`, so they load in any gateway that accepts
+`APIVersion == 4`. The official pairing matrix, plugin compatibility range and
+`APIVersion` bump rules are in
+[Gateway version compatibility](https://github.com/Ellisata/iot-gateway/blob/main/docs/version-compatibility.md).
+
 The `Meta.Version` a plugin reports is injected at build time from the tag.
 `build.sh` does this automatically; for a manual single-driver build:
 

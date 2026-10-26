@@ -88,6 +88,8 @@ go work edit -replace github.com/Ellisata/iot-gateway-sdk/testkit=../iot-gateway
 
 本仓库独立打 tag（如 `v0.1.0`）。网关的每次发布都会固定一个驱动 tag，并打包与之匹配的插件二进制。生产环境不要混用随意搭配的网关版本与驱动版本。
 
+**驱动版本号不参与运行时兼容判定**：决定插件能否加载的只有 `APIVersion`。当前驱动 v0.1.0 用 SDK v0.1.0 构建、`APIVersion = 4`，可加载于任何接受 `APIVersion == 4` 的网关。官方发行配对矩阵、插件兼容区间与 `APIVersion` 进位规则见[网关版本兼容性](https://github.com/Ellisata/iot-gateway/blob/main/docs/version-compatibility.md)。
+
 插件上报的 `Meta.Version` 在构建时由 tag 注入。`build.sh` 会自动完成；手工构建单个驱动时：
 
 ```bash
