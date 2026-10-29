@@ -60,13 +60,14 @@ const (
 // 用 cfg.Transport = d.transport 硬覆盖 protocol_json 的值，列出来只会让用户以为选了就能换。
 const formTCP = `{
   "rule": [
-    {"type":"input","field":"host","title":"设备IP","$required":true},
-    {"type":"inputNumber","field":"port","title":"设备端口","$required":true}
+    {"type":"input","field":"host","title":"{{$t.host_title}}","$required":true},
+    {"type":"inputNumber","field":"port","title":"{{$t.port_title}}","$required":true}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"host_title":"设备IP","port_title":"设备端口"},"en":{"host_title":"Device IP","port_title":"Device port"}}
   }
 }`
 
@@ -83,21 +84,22 @@ const formTCP = `{
 // "comPort is required"，预填一个驱动并不认同的默认值反而是另一种界面在骗人。
 const formSerial = `{
   "rule": [
-    {"type":"input","field":"comPort","title":"设备端口","$required":true,
-     "info":"如 COM3、COM12（Windows）或 /dev/ttyUSB0、/dev/ttyS0（Linux）；须与网关设备上实际枚举出的端口名完全一致"},
-    {"type":"select","field":"baudRate","title":"波特率","$required":false,
+    {"type":"input","field":"comPort","title":"{{$t.comPort_title}}","$required":true,
+     "info":"{{$t.comPort_info}}"},
+    {"type":"select","field":"baudRate","title":"{{$t.baudRate_title}}","$required":false,
      "options":[{"label":"9600","value":"9600"},{"label":"19200","value":"19200"},{"label":"38400","value":"38400"},{"label":"57600","value":"57600"},{"label":"115200","value":"115200"}]},
-    {"type":"select","field":"dataBits","title":"数据位","$required":false,
+    {"type":"select","field":"dataBits","title":"{{$t.dataBits_title}}","$required":false,
      "options":[{"label":"7","value":"7"},{"label":"8","value":"8"}]},
-    {"type":"select","field":"stopBits","title":"停止位","$required":false,
+    {"type":"select","field":"stopBits","title":"{{$t.stopBits_title}}","$required":false,
      "options":[{"label":"1","value":"1"},{"label":"2","value":"2"}]},
-    {"type":"select","field":"parity","title":"校验位","$required":false,
-     "options":[{"label":"无","value":"N"},{"label":"偶","value":"E"},{"label":"奇","value":"O"}]}
+    {"type":"select","field":"parity","title":"{{$t.parity_title}}","$required":false,
+     "options":[{"label":"{{$t.parity_option_0}}","value":"N"},{"label":"{{$t.parity_option_1}}","value":"E"},{"label":"{{$t.parity_option_2}}","value":"O"}]}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"comPort_title":"设备端口","comPort_info":"如 COM3、COM12（Windows）或 /dev/ttyUSB0、/dev/ttyS0（Linux）；须与网关设备上实际枚举出的端口名完全一致","baudRate_title":"波特率","dataBits_title":"数据位","stopBits_title":"停止位","parity_title":"校验位","parity_option_0":"无","parity_option_1":"偶","parity_option_2":"奇"},"en":{"comPort_title":"Device port","comPort_info":"For example COM3 or COM12 (Windows) or /dev/ttyUSB0 or /dev/ttyS0 (Linux). It must exactly match the port name enumerated on the gateway host","baudRate_title":"Baud rate","dataBits_title":"Data bits","stopBits_title":"Stop bits","parity_title":"Parity","parity_option_0":"None","parity_option_1":"Even","parity_option_2":"Odd"}}
   }
 }`
 

@@ -116,15 +116,16 @@ const (
 // 悄悄忽略会让"我明明限制了范围，怎么还是全量扫了一遍"变成一个查不出的谜。
 const pointScanForm = `{
   "rule": [
-    {"type":"input","field":"startNode","title":"起始节点","$required":false,
-     "info":"留空即从 Objects 文件夹开始（绝大多数服务器把业务节点挂在它下面）。大服务器上从一个设备的子树开始，能把扫描时间从几十秒压到几秒。可填 NodeID（如 ns=2;s=Device）或浏览路径（如 Root/Objects/2:Device —— 从 Root 写起，只写 Objects/... 会被剥掉那一段）"},
-    {"type":"inputNumber","field":"maxDepth","title":"最大深度","$required":false,"value":8,
-     "info":"默认 8。从起始节点往下最多走几层；0 表示不限（仍受单次上限与预算约束）"}
+    {"type":"input","field":"startNode","title":"{{$t.startNode_title}}","$required":false,
+     "info":"{{$t.startNode_info}}"},
+    {"type":"inputNumber","field":"maxDepth","title":"{{$t.maxDepth_title}}","$required":false,"value":8,
+     "info":"{{$t.maxDepth_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"startNode_title":"起始节点","startNode_info":"留空即从 Objects 文件夹开始（绝大多数服务器把业务节点挂在它下面）。大服务器上从一个设备的子树开始，能把扫描时间从几十秒压到几秒。可填 NodeID（如 ns=2;s=Device）或浏览路径（如 Root/Objects/2:Device —— 从 Root 写起，只写 Objects/... 会被剥掉那一段）","maxDepth_title":"最大深度","maxDepth_info":"默认 8。从起始节点往下最多走几层；0 表示不限（仍受单次上限与预算约束）"},"en":{"startNode_title":"Start node","startNode_info":"Leave empty to start from the Objects folder, where most servers place business nodes. On a large server, starting from one device subtree can cut scan time from tens of seconds to a few seconds. Enter a NodeID (for example ns=2;s=Device) or a browse path (for example Root/Objects/2:Device, starting from Root. A path starting at Objects/... is stripped)","maxDepth_title":"Max depth","maxDepth_info":"Defaults to 8. Maximum levels to walk below the start node. 0 means unlimited (still bounded by the item limit and the time budget)"}}
   }
 }`
 
@@ -186,6 +187,12 @@ func PointDiscovery() *driver.PointDiscoverySpec {
 			"「未扫完」，不会报错 —— 缩小起始节点或深度重扫即可拿全。" +
 			"类型列按 **Kind 等价**映射：Int32→Long、UInt64→DWord、SByte→Char、ByteString→String，" +
 			"与服务器类型不一致时会在「采样值」那一列标出 OPC UA 的基础类型名",
+		TitleI18n: map[string]string{
+			"en": "Enumerate OPC UA nodes",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Uses the OPC UA Browse service to **natively enumerate** nodes in the server address space. This is one of the few protocols that can truly list points: what is listed is the **server-reported node**, not the addresses readable in some range. Five limits to know first: (1) sampling values are **not read**, only nodes and types are listed, because reading values would double the request count. (2) Only **variable** nodes are listed. Folders are used for traversal and are not listed. The server own `Server` diagnostic nodes are also listed. (3) Custom and enumerated types are traced up the inheritance chain to OPC UA base types. Types without a common mapping (structures, Guid, NodeID, LocalizedText and so on) **are skipped**, and the skip count is visible under not listed. Not listed does not mean unreadable. (4) Prefer a NodeID address such as `ns=2;s=Temperature`. A few string NodeIDs containing `/` cannot be written as a NodeID (they are treated as browse paths). For those, use a browse path from Root. The cost is one extra server resolution on the first collection after each reconnect. (5) If the budget (7000ms effective on the gateway side) runs out, the scan **returns normally with the part already read** and marks the result as incomplete instead of failing. Narrow the start node or depth and scan again to get everything. Types are mapped by **Kind equivalence**: Int32 to Long, UInt64 to DWord, SByte to Char, ByteString to String. When the server type differs, the OPC UA base type name is shown in the sampling value column",
+		},
 		FormJSON: json.RawMessage(pointScanForm),
 		// "Long" 是 TypeMap 的键。它只是**兜底初值**：本 finder 产出的每一行都
 		// 自带 CommonDataType，只有那一项为空时前端才会用到这个默认值。

@@ -70,15 +70,16 @@ const (
 //     扫描页最常被抱怨的就是慢，而这个值是唯一的调节点。
 const scanForm = `{
   "rule": [
-    {"type":"input","field":"nodes","title":"节点号候选","$required":false,
-     "info":"逗号分隔的 FINS 节点号（DA1，1-254），最多 4 个，按顺序尝试。留空即按「设备IP 末段」推导——与采集时的默认行为一致，绝大多数现场留空即可。只有 PLC 的节点号被改成了非 IP 末段时才需要填，命中的那一个会写进新建设备的配置里"},
-    {"type":"inputNumber","field":"timeoutMs","title":"单目标超时(ms)","$required":false,"value":1500,
-     "info":"默认 1500。一次探测只有一次「发帧-等应答」，目标不可达时每台就会等满这个时间，因此扫描一个网段的总耗时基本由它决定：调小可显著加快扫描，代价是慢设备可能被漏掉"}
+    {"type":"input","field":"nodes","title":"{{$t.nodes_title}}","$required":false,
+     "info":"{{$t.nodes_info}}"},
+    {"type":"inputNumber","field":"timeoutMs","title":"{{$t.timeoutMs_title}}","$required":false,"value":1500,
+     "info":"{{$t.timeoutMs_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"nodes_title":"节点号候选","nodes_info":"逗号分隔的 FINS 节点号（DA1，1-254），最多 4 个，按顺序尝试。留空即按「设备IP 末段」推导——与采集时的默认行为一致，绝大多数现场留空即可。只有 PLC 的节点号被改成了非 IP 末段时才需要填，命中的那一个会写进新建设备的配置里","timeoutMs_title":"单目标超时(ms)","timeoutMs_info":"默认 1500。一次探测只有一次「发帧-等应答」，目标不可达时每台就会等满这个时间，因此扫描一个网段的总耗时基本由它决定：调小可显著加快扫描，代价是慢设备可能被漏掉"},"en":{"nodes_title":"Node number candidates","nodes_info":"Comma-separated FINS node numbers (DA1, 1-254), up to 4, tried in order. Leave empty to derive it from the last segment of the device IP, matching collection behavior, which is correct on almost every site. Fill it only when the PLC node number is not the IP last segment. The one that answers is written into the new device config","timeoutMs_title":"Per-target timeout (ms)","timeoutMs_info":"Defaults to 1500. A probe performs one send-and-wait. An unreachable target waits the full time, so this largely determines how long a subnet scan takes. Lowering it speeds up the scan at the cost of missing slow devices"}}
   }
 }`
 
@@ -95,6 +96,12 @@ func DiscoveryUDP() *driver.DiscoverySpec {
 			"收到命令码自洽的 FINS 应答即认定是欧姆龙 PLC。" +
 			"UDP 无连接，探测与采集一样不做握手；端口上跑着别的服务不会应答，因此不会误报。" +
 			"节点号默认按「设备IP 末段」推导（与采集一致），可改成候选列表逐个尝试",
+		TitleI18n: map[string]string{
+			"en": "Omron FINS/UDP scan",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Sends one memory-area read command (DM word 0) to 9600/UDP on each host and treats a self-consistent FINS response as an Omron PLC. UDP is connectionless, so probing does no handshake, just like collection. Other services on the port do not answer, so false positives are avoided. The node number defaults to the last segment of the device IP, matching collection, and can be replaced with a candidate list tried in order",
+		},
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,
@@ -115,6 +122,12 @@ func DiscoveryTCP() *driver.DiscoverySpec {
 		Description: "逐主机连接 9600/TCP，完成 FINS/TCP 连接握手后再读一次 DM 字 0，" +
 			"两者都成功才认定是欧姆龙 PLC（只握手不读会把同样实现了 FINS/TCP 封帧的服务端报成 PLC）。" +
 			"节点号默认按「设备IP 末段」推导（与采集一致），可改成候选列表逐个尝试",
+		TitleI18n: map[string]string{
+			"en": "Omron FINS/TCP scan",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Connects to 9600/TCP on each host, completes the FINS/TCP connection handshake and then reads DM word 0 once. Both must succeed to call it an Omron PLC. A handshake alone would report any server that implements FINS/TCP framing as a PLC. The node number defaults to the last segment of the device IP, matching collection, and can be replaced with a candidate list tried in order",
+		},
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,

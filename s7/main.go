@@ -55,17 +55,18 @@ const (
 // 故表单里没有串口相关字段。
 const formS7 = `{
   "rule": [
-    {"type":"input","field":"host","title":"设备IP","$required":true},
-    {"type":"inputNumber","field":"port","title":"设备端口","$required":true},
-    {"type":"input","field":"rack","title":"机架","$required":true},
-    {"type":"input","field":"slot","title":"槽号","$required":true},
-    {"type":"select","field":"connectionType","title":"连接类型","$required":false,
+    {"type":"input","field":"host","title":"{{$t.host_title}}","$required":true},
+    {"type":"inputNumber","field":"port","title":"{{$t.port_title}}","$required":true},
+    {"type":"input","field":"rack","title":"{{$t.rack_title}}","$required":true},
+    {"type":"input","field":"slot","title":"{{$t.slot_title}}","$required":true},
+    {"type":"select","field":"connectionType","title":"{{$t.connectionType_title}}","$required":false,
      "options":[{"label":"PG","value":"1"},{"label":"OP","value":"2"},{"label":"PC","value":"3"}]}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"host_title":"设备IP","port_title":"设备端口","rack_title":"机架","slot_title":"槽号","connectionType_title":"连接类型"},"en":{"host_title":"Device IP","port_title":"Device port","rack_title":"Rack","slot_title":"Slot number","connectionType_title":"Connection type"}}
   }
 }`
 

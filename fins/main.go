@@ -74,22 +74,23 @@ const (
 // 节点号留空时由 finsdrv 的 resolveDstNode 取 host 的末段补齐。
 const formUDP = `{
   "rule": [
-    {"type":"input","field":"host","title":"设备ip","$required":true},
-    {"type":"inputNumber","field":"port","title":"设备端口","$required":true,
-     "info":"默认 9600；UDP 无连接，网关直接发数据报，不建连接"},
-    {"type":"input","field":"dstNode","title":"设备节点号","$required":false,
-     "info":"PLC 的 FINS 节点号（DA1）；留空时自动取「设备ip」末段"},
-    {"type":"input","field":"srcNode","title":"网关节点号","$required":false,
-     "info":"网关的 FINS 节点号（SA1）；留空时为 0"},
-    {"type":"select","field":"byteOrder","title":"字节序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]},
-    {"type":"select","field":"wordOrder","title":"字序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]}
+    {"type":"input","field":"host","title":"{{$t.host_title}}","$required":true},
+    {"type":"inputNumber","field":"port","title":"{{$t.port_title}}","$required":true,
+     "info":"{{$t.port_info}}"},
+    {"type":"input","field":"dstNode","title":"{{$t.dstNode_title}}","$required":false,
+     "info":"{{$t.dstNode_info}}"},
+    {"type":"input","field":"srcNode","title":"{{$t.srcNode_title}}","$required":false,
+     "info":"{{$t.srcNode_info}}"},
+    {"type":"select","field":"byteOrder","title":"{{$t.byteOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]},
+    {"type":"select","field":"wordOrder","title":"{{$t.wordOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"host_title":"设备ip","port_title":"设备端口","port_info":"默认 9600；UDP 无连接，网关直接发数据报，不建连接","dstNode_title":"设备节点号","dstNode_info":"PLC 的 FINS 节点号（DA1）；留空时自动取「设备ip」末段","srcNode_title":"网关节点号","srcNode_info":"网关的 FINS 节点号（SA1）；留空时为 0","byteOrder_title":"字节序","byteOrder_option_0":"默认","byteOrder_option_1":"高字在前","byteOrder_option_2":"低字在前","wordOrder_title":"字序"},"en":{"host_title":"Device IP","port_title":"Device port","port_info":"Defaults to 9600. UDP is connectionless, the gateway sends datagrams directly without connecting","dstNode_title":"Device node number","dstNode_info":"PLC FINS node number (DA1). Leave empty to use the last segment of the device IP","srcNode_title":"Gateway node number","srcNode_info":"Gateway FINS node number (SA1). Leave empty for 0","byteOrder_title":"Byte order","byteOrder_option_0":"Default","byteOrder_option_1":"High word first","byteOrder_option_2":"Low word first","wordOrder_title":"Word order"}}
   }
 }`
 
@@ -99,22 +100,23 @@ const formUDP = `{
 // 这是这两个协议在配置界面之外唯一的差别。
 const formTCP = `{
   "rule": [
-    {"type":"input","field":"host","title":"设备ip","$required":true},
-    {"type":"inputNumber","field":"port","title":"设备端口","$required":true,
-     "info":"默认 9600；建连时会先与 PLC 做一次 FINS/TCP 连接握手"},
-    {"type":"input","field":"dstNode","title":"设备节点号","$required":false,
-     "info":"PLC 的 FINS 节点号（DA1）；留空时自动取「设备ip」末段"},
-    {"type":"input","field":"srcNode","title":"网关节点号","$required":false,
-     "info":"网关的 FINS 节点号（SA1）；留空时为 0"},
-    {"type":"select","field":"byteOrder","title":"字节序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]},
-    {"type":"select","field":"wordOrder","title":"字序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]}
+    {"type":"input","field":"host","title":"{{$t.host_title}}","$required":true},
+    {"type":"inputNumber","field":"port","title":"{{$t.port_title}}","$required":true,
+     "info":"{{$t.port_info}}"},
+    {"type":"input","field":"dstNode","title":"{{$t.dstNode_title}}","$required":false,
+     "info":"{{$t.dstNode_info}}"},
+    {"type":"input","field":"srcNode","title":"{{$t.srcNode_title}}","$required":false,
+     "info":"{{$t.srcNode_info}}"},
+    {"type":"select","field":"byteOrder","title":"{{$t.byteOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]},
+    {"type":"select","field":"wordOrder","title":"{{$t.wordOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"host_title":"设备ip","port_title":"设备端口","port_info":"默认 9600；建连时会先与 PLC 做一次 FINS/TCP 连接握手","dstNode_title":"设备节点号","dstNode_info":"PLC 的 FINS 节点号（DA1）；留空时自动取「设备ip」末段","srcNode_title":"网关节点号","srcNode_info":"网关的 FINS 节点号（SA1）；留空时为 0","byteOrder_title":"字节序","byteOrder_option_0":"默认","byteOrder_option_1":"高字在前","byteOrder_option_2":"低字在前","wordOrder_title":"字序"},"en":{"host_title":"Device IP","port_title":"Device port","port_info":"Defaults to 9600. A FINS/TCP connection handshake with the PLC happens before dialing","dstNode_title":"Device node number","dstNode_info":"PLC FINS node number (DA1). Leave empty to use the last segment of the device IP","srcNode_title":"Gateway node number","srcNode_info":"Gateway FINS node number (SA1). Leave empty for 0","byteOrder_title":"Byte order","byteOrder_option_0":"Default","byteOrder_option_1":"High word first","byteOrder_option_2":"Low word first","wordOrder_title":"Word order"}}
   }
 }`
 
@@ -126,23 +128,24 @@ const formTCP = `{
 // 把 PLC 的 IP 填进来 —— PLC 走的是串口，网络上根本没有它的地址。
 const formHostLinkTCP = `{
   "rule": [
-    {"type":"input","field":"host","title":"设备ip","$required":true,
-     "info":"串口服务器的 IP，不是 PLC 的 IP（PLC 走 RS-232/485，网络上没有它的地址）"},
-    {"type":"inputNumber","field":"port","title":"设备端口","$required":true,
-     "info":"默认 9600；串口服务器上转发 PLC 串口的那一个 TCP 端口"},
-    {"type":"input","field":"dstNode","title":"设备节点号","$required":false,
-     "info":"未使用（DA1 仅 FINS/UDP、FINS/TCP 生效）；驱动对串口服务器只发 Host Link 帧"},
-    {"type":"input","field":"srcNode","title":"网关节点号","$required":false,
-     "info":"未使用（SA1 仅 FINS/UDP、FINS/TCP 生效）"},
-    {"type":"select","field":"byteOrder","title":"字节序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]},
-    {"type":"select","field":"wordOrder","title":"字序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]}
+    {"type":"input","field":"host","title":"{{$t.host_title}}","$required":true,
+     "info":"{{$t.host_info}}"},
+    {"type":"inputNumber","field":"port","title":"{{$t.port_title}}","$required":true,
+     "info":"{{$t.port_info}}"},
+    {"type":"input","field":"dstNode","title":"{{$t.dstNode_title}}","$required":false,
+     "info":"{{$t.dstNode_info}}"},
+    {"type":"input","field":"srcNode","title":"{{$t.srcNode_title}}","$required":false,
+     "info":"{{$t.srcNode_info}}"},
+    {"type":"select","field":"byteOrder","title":"{{$t.byteOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]},
+    {"type":"select","field":"wordOrder","title":"{{$t.wordOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"host_title":"设备ip","host_info":"串口服务器的 IP，不是 PLC 的 IP（PLC 走 RS-232/485，网络上没有它的地址）","port_title":"设备端口","port_info":"默认 9600；串口服务器上转发 PLC 串口的那一个 TCP 端口","dstNode_title":"设备节点号","dstNode_info":"未使用（DA1 仅 FINS/UDP、FINS/TCP 生效）；驱动对串口服务器只发 Host Link 帧","srcNode_title":"网关节点号","srcNode_info":"未使用（SA1 仅 FINS/UDP、FINS/TCP 生效）","byteOrder_title":"字节序","byteOrder_option_0":"默认","byteOrder_option_1":"高字在前","byteOrder_option_2":"低字在前","wordOrder_title":"字序"},"en":{"host_title":"Device IP","host_info":"IP address of the serial server, not the PLC. The PLC is behind RS-232/485 and has no network address","port_title":"Device port","port_info":"Defaults to 9600. The TCP port on the serial server that forwards the PLC serial port","dstNode_title":"Device node number","dstNode_info":"Unused (DA1 applies only to FINS/UDP and FINS/TCP). The driver sends only Host Link frames to a serial server","srcNode_title":"Gateway node number","srcNode_info":"Unused (SA1 applies only to FINS/UDP and FINS/TCP)","byteOrder_title":"Byte order","byteOrder_option_0":"Default","byteOrder_option_1":"High word first","byteOrder_option_2":"Low word first","wordOrder_title":"Word order"}}
   }
 }`
 
@@ -170,30 +173,31 @@ const formHostLinkTCP = `{
 // JSON 数字，反序列化直接报错，整份 protocol_json 都解析不出来。
 const formSerial = `{
   "rule": [
-    {"type":"input","field":"comPort","title":"设备端口","$required":true,"value":"COM1",
-     "info":"如 COM3、COM12（Windows）或 /dev/ttyUSB0、/dev/ttyS0（Linux）；须与网关设备上实际枚举出的端口名完全一致"},
-    {"type":"select","field":"baudRate","title":"波特率","$required":false,
+    {"type":"input","field":"comPort","title":"{{$t.comPort_title}}","$required":true,"value":"COM1",
+     "info":"{{$t.comPort_info}}"},
+    {"type":"select","field":"baudRate","title":"{{$t.baudRate_title}}","$required":false,
      "options":[{"label":"9600","value":"9600"},{"label":"19200","value":"19200"},{"label":"38400","value":"38400"},{"label":"57600","value":"57600"},{"label":"115200","value":"115200"}]},
-    {"type":"select","field":"dataBits","title":"数据位","$required":false,
+    {"type":"select","field":"dataBits","title":"{{$t.dataBits_title}}","$required":false,
      "options":[{"label":"7","value":"7"},{"label":"8","value":"8"}]},
-    {"type":"select","field":"stopBits","title":"停止位","$required":false,
+    {"type":"select","field":"stopBits","title":"{{$t.stopBits_title}}","$required":false,
      "options":[{"label":"1","value":"1"},{"label":"2","value":"2"}]},
-    {"type":"select","field":"parity","title":"校验位","$required":false,
-     "options":[{"label":"无","value":"N"},{"label":"偶","value":"E"},{"label":"奇","value":"O"}]},
-    {"type":"input","field":"unitNo","title":"Host Link 单元号","$required":false},
-    {"type":"select","field":"fcsMode","title":"FCS 取窗","$required":false,
-     "options":[{"label":"NOSID（默认，含@排除SID）","value":"NOSID"},{"label":"FULL（含@，手册标准）","value":"FULL"},{"label":"BODY（仅hex体）","value":"BODY"}]},
-    {"type":"input","field":"timeoutMs","title":"单帧超时(ms)","$required":false,
-     "info":"默认 5000；波特率低或 PLC 应答慢时调大。过小会把应答帧截断，表现为偶发 FCS 校验错而非明确超时"},
-    {"type":"select","field":"byteOrder","title":"字节序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]},
-    {"type":"select","field":"wordOrder","title":"字序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]}
+    {"type":"select","field":"parity","title":"{{$t.parity_title}}","$required":false,
+     "options":[{"label":"{{$t.parity_option_0}}","value":"N"},{"label":"{{$t.parity_option_1}}","value":"E"},{"label":"{{$t.parity_option_2}}","value":"O"}]},
+    {"type":"input","field":"unitNo","title":"{{$t.unitNo_title}}","$required":false},
+    {"type":"select","field":"fcsMode","title":"{{$t.fcsMode_title}}","$required":false,
+     "options":[{"label":"{{$t.fcsMode_option_0}}","value":"NOSID"},{"label":"{{$t.fcsMode_option_1}}","value":"FULL"},{"label":"{{$t.fcsMode_option_2}}","value":"BODY"}]},
+    {"type":"input","field":"timeoutMs","title":"{{$t.timeoutMs_title}}","$required":false,
+     "info":"{{$t.timeoutMs_info}}"},
+    {"type":"select","field":"byteOrder","title":"{{$t.byteOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]},
+    {"type":"select","field":"wordOrder","title":"{{$t.wordOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"comPort_title":"设备端口","comPort_info":"如 COM3、COM12（Windows）或 /dev/ttyUSB0、/dev/ttyS0（Linux）；须与网关设备上实际枚举出的端口名完全一致","baudRate_title":"波特率","dataBits_title":"数据位","stopBits_title":"停止位","parity_title":"校验位","parity_option_0":"无","parity_option_1":"偶","parity_option_2":"奇","unitNo_title":"Host Link 单元号","fcsMode_title":"FCS 取窗","fcsMode_option_0":"NOSID（默认，含@排除SID）","fcsMode_option_1":"FULL（含@，手册标准）","fcsMode_option_2":"BODY（仅hex体）","timeoutMs_title":"单帧超时(ms)","timeoutMs_info":"默认 5000；波特率低或 PLC 应答慢时调大。过小会把应答帧截断，表现为偶发 FCS 校验错而非明确超时","byteOrder_title":"字节序","byteOrder_option_0":"默认","byteOrder_option_1":"高字在前","byteOrder_option_2":"低字在前","wordOrder_title":"字序"},"en":{"comPort_title":"Device port","comPort_info":"For example COM3 or COM12 (Windows) or /dev/ttyUSB0 or /dev/ttyS0 (Linux). It must exactly match the port name enumerated on the gateway host","baudRate_title":"Baud rate","dataBits_title":"Data bits","stopBits_title":"Stop bits","parity_title":"Parity","parity_option_0":"None","parity_option_1":"Even","parity_option_2":"Odd","unitNo_title":"Host Link unit number","fcsMode_title":"FCS window","fcsMode_option_0":"NOSID (default, @ excluded from SID)","fcsMode_option_1":"FULL (includes @, manual standard)","fcsMode_option_2":"BODY (hex body only)","timeoutMs_title":"Frame timeout (ms)","timeoutMs_info":"Defaults to 5000. Increase it when the baud rate is low or the PLC responds slowly. Too small truncates the response frame, which shows up as intermittent FCS errors rather than a clear timeout","byteOrder_title":"Byte order","byteOrder_option_0":"Default","byteOrder_option_1":"High word first","byteOrder_option_2":"Low word first","wordOrder_title":"Word order"}}
   }
 }`
 

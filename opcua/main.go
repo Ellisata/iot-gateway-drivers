@@ -61,24 +61,25 @@ const (
 // host + port 自动生成（见 opcuadrv.ParseOpcUaConfig）。
 const formOpcUa = `{
   "rule": [
-    {"type":"input","field":"endpoint","title":"端点地址","$required":false},
-    {"type":"input","field":"host","title":"设备IP","$required":true},
-    {"type":"inputNumber","field":"port","title":"设备端口","$required":true},
-    {"type":"select","field":"securityPolicy","title":"安全策略","$required":false,
-     "options":[{"label":"无","value":"None"},{"label":"Basic128Rsa15","value":"Basic128Rsa15"},{"label":"Basic256","value":"Basic256"},{"label":"Basic256Sha256","value":"Basic256Sha256"}]},
-    {"type":"select","field":"securityMode","title":"安全模式","$required":false,
-     "options":[{"label":"无","value":"None"},{"label":"签名","value":"Sign"},{"label":"签名并加密","value":"SignAndEncrypt"}]},
-    {"type":"select","field":"authMode","title":"认证方式","$required":false,
-     "options":[{"label":"匿名","value":"Anonymous"},{"label":"用户名/密码","value":"Username"}]},
-    {"type":"input","field":"username","title":"用户名","$required":false},
-    {"type":"input","field":"password","title":"密码","$required":false,"props":{"type":"password"}},
-    {"type":"inputNumber","field":"timeoutMs","title":"请求超时(ms)","$required":false},
-    {"type":"inputNumber","field":"maxBatch","title":"批量读取节点数","$required":false}
+    {"type":"input","field":"endpoint","title":"{{$t.endpoint_title}}","$required":false},
+    {"type":"input","field":"host","title":"{{$t.host_title}}","$required":true},
+    {"type":"inputNumber","field":"port","title":"{{$t.port_title}}","$required":true},
+    {"type":"select","field":"securityPolicy","title":"{{$t.securityPolicy_title}}","$required":false,
+     "options":[{"label":"{{$t.securityPolicy_option_0}}","value":"None"},{"label":"Basic128Rsa15","value":"Basic128Rsa15"},{"label":"Basic256","value":"Basic256"},{"label":"Basic256Sha256","value":"Basic256Sha256"}]},
+    {"type":"select","field":"securityMode","title":"{{$t.securityMode_title}}","$required":false,
+     "options":[{"label":"{{$t.securityPolicy_option_0}}","value":"None"},{"label":"{{$t.securityMode_option_1}}","value":"Sign"},{"label":"{{$t.securityMode_option_2}}","value":"SignAndEncrypt"}]},
+    {"type":"select","field":"authMode","title":"{{$t.authMode_title}}","$required":false,
+     "options":[{"label":"{{$t.authMode_option_0}}","value":"Anonymous"},{"label":"{{$t.authMode_option_1}}","value":"Username"}]},
+    {"type":"input","field":"username","title":"{{$t.username_title}}","$required":false},
+    {"type":"input","field":"password","title":"{{$t.password_title}}","$required":false,"props":{"type":"password"}},
+    {"type":"inputNumber","field":"timeoutMs","title":"{{$t.timeoutMs_title}}","$required":false},
+    {"type":"inputNumber","field":"maxBatch","title":"{{$t.maxBatch_title}}","$required":false}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"endpoint_title":"端点地址","host_title":"设备IP","port_title":"设备端口","securityPolicy_title":"安全策略","securityPolicy_option_0":"无","securityMode_title":"安全模式","securityMode_option_1":"签名","securityMode_option_2":"签名并加密","authMode_title":"认证方式","authMode_option_0":"匿名","authMode_option_1":"用户名/密码","username_title":"用户名","password_title":"密码","timeoutMs_title":"请求超时(ms)","maxBatch_title":"批量读取节点数"},"en":{"endpoint_title":"Endpoint URL","host_title":"Device IP","port_title":"Device port","securityPolicy_title":"Security policy","securityPolicy_option_0":"None","securityMode_title":"Security mode","securityMode_option_1":"Sign","securityMode_option_2":"Sign and encrypt","authMode_title":"Authentication mode","authMode_option_0":"Anonymous","authMode_option_1":"Username/password","username_title":"Username","password_title":"Password","timeoutMs_title":"Request timeout (ms)","maxBatch_title":"Nodes per batch read"}}
   }
 }`
 

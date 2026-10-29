@@ -6,6 +6,29 @@ All notable changes to the official iot-gateway drivers are documented here.
 Chinese entries come first under each release, followed by English entries.
 This repository is versioned independently from the gateway and the SDK.
 
+## [0.2.0] - 2026-10-29
+
+### 新增
+
+- 全部 29 个动态表单（15 个协议配置、7 个局域网扫描、7 个点位扫描）改为数据驱动多语言：
+  标题/提示/选项文案使用 `{{$t.key}}`，中文与英文译文存放在表单自带的
+  `options.language` 里。表单在设计器里怎么改，都随数据一起切换，不依赖前端词典。
+- 扫描能力声明的 `Title` / `Description` 新增可选 `TitleI18n` / `DescriptionI18n`
+  （SDK v0.2.0），扫描页下拉与点位扫描弹窗的标题/说明可切换中英。
+- 新增仓库级 `internal/formcheck` 测试：token 与译文双向完整、英文不含中文、
+  协议表单不含会被迁移器切开的分号。
+
+### Added
+
+- All 29 dynamic forms (15 protocol config, 7 LAN discovery, 7 point discovery) are now
+  data-driven multilingual: display text uses `{{$t.key}}` and the Chinese/English
+  translations live in the form's own `options.language`. Form edits travel with the
+  data, with no runtime dictionary in the gateway.
+- Scan specs gained optional `TitleI18n` / `DescriptionI18n` (SDK v0.2.0), so the
+  discovery dropdown and point-discovery dialog title/description switch language too.
+- A repo-wide `internal/formcheck` test enforces token/translation symmetry, no CJK in
+  English, and no semicolons in protocol forms (the migration splitter would break).
+
 ## [0.1.0] - 2026-10-25
 
 ### 新增

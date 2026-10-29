@@ -80,13 +80,14 @@ const (
 // 否则用户调小它之后会得到"广播扫不到慢设备"这种看不出原因的结果。
 const scanForm = `{
   "rule": [
-    {"type":"inputNumber","field":"timeoutMs","title":"应答等待(ms)","$required":false,"value":1500,
-     "info":"默认 1500。广播探测时是「等第一个应答」与「收齐后的安静窗口」的上限；逐主机探测时就是单台设备的等待上限。调小可显著加快逐主机扫描，代价是慢设备可能被漏掉"}
+    {"type":"inputNumber","field":"timeoutMs","title":"{{$t.timeoutMs_title}}","$required":false,"value":1500,
+     "info":"{{$t.timeoutMs_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"timeoutMs_title":"应答等待(ms)","timeoutMs_info":"默认 1500。广播探测时是「等第一个应答」与「收齐后的安静窗口」的上限；逐主机探测时就是单台设备的等待上限。调小可显著加快逐主机扫描，代价是慢设备可能被漏掉"},"en":{"timeoutMs_title":"Response wait (ms)","timeoutMs_info":"Defaults to 1500. In broadcast mode this bounds both the wait for the first reply and the quiet window after replies. In per-host mode it is the wait per device. Lowering it speeds up per-host scanning at the cost of missing slow devices"}}
   }
 }`
 
@@ -111,6 +112,12 @@ func Discovery() *driver.DiscoverySpec {
 			"广播与逐主机两种目标都扫：广播快（一条数据报覆盖整个网段），逐主机兜底" +
 			"（禁广播的受管网络上仍能扫到），重复的设备会自动合并。" +
 			"只上报罗克韦尔（厂商号 1）的 EtherNet/IP 设备 —— 别的厂商的设备本插件采不了",
+		TitleI18n: map[string]string{
+			"en": "Rockwell EtherNet/IP scan",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Uses the standard EtherNet/IP ListIdentity (44818/UDP) to list Rockwell devices on the subnet. Model and version come from the device **self-reported** identity, not a guess. Both broadcast and per-host targets are scanned: broadcast is fast (one datagram covers the subnet) and per-host is the fallback (managed networks with broadcast disabled are still covered). Duplicate devices are merged. Only Rockwell (vendor ID 1) EtherNet/IP devices are reported, since this plugin cannot collect from other vendors",
+		},
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultPort,
 		TargetMode:  driver.TargetModeBoth,

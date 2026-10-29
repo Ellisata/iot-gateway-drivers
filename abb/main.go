@@ -69,34 +69,35 @@ const (
 //     情况下把控制器的限流绕过去。要改就改 abbdrv/config.go 里的常量。
 const formRWS = `{
   "rule": [
-    {"type":"input","field":"endpoint","title":"端点地址","$required":false,"value":""},
-    {"type":"input","field":"host","title":"设备IP","$required":true,"value":""},
-    {"type":"inputNumber","field":"port","title":"端口(0=自动)","$required":false,"value":0},
-    {"type":"select","field":"useHttps","title":"协议","$required":false,"value":"auto",
-     "options":[{"label":"自动","value":"auto"},{"label":"仅HTTPS","value":"true"},{"label":"仅HTTP","value":"false"}]},
-    {"type":"select","field":"rwsVersion","title":"RWS版本","$required":false,"value":"auto",
-     "options":[{"label":"自动","value":"auto"},{"label":"RWS 1.0 (IRC5/RW6)","value":"1.0"},{"label":"RWS 2.0 (OmniCore/RW7)","value":"2.0"}]},
-    {"type":"input","field":"username","title":"用户名","$required":false,"value":"Default User"},
-    {"type":"input","field":"password","title":"密码","$required":false,"value":"robotics","props":{"type":"password"}},
-    {"type":"inputNumber","field":"timeoutMs","title":"请求超时(ms)","$required":false,"value":5000},
-    {"type":"select","field":"insecureSkipVerify","title":"跳过证书校验","$required":false,"value":"true",
-     "options":[{"label":"是","value":"true"},{"label":"否","value":"false"}]},
-    {"type":"select","field":"bulkRead","title":"批量读取","$required":false,"value":"true",
-     "options":[{"label":"开启","value":"true"},{"label":"关闭","value":"false"}]},
-    {"type":"select","field":"sessionRequest","title":"创建RWS会话","$required":false,"value":"auto",
-     "options":[{"label":"自动","value":"auto"},{"label":"是","value":"true"},{"label":"否","value":"false"}]},
-    {"type":"inputNumber","field":"maxRequestsPerSecond","title":"每秒请求上限","$required":false,"value":8},
-    {"type":"select","field":"cartesianSource","title":"笛卡尔来源","$required":false,"value":"robtarget",
+    {"type":"input","field":"endpoint","title":"{{$t.endpoint_title}}","$required":false,"value":""},
+    {"type":"input","field":"host","title":"{{$t.host_title}}","$required":true,"value":""},
+    {"type":"inputNumber","field":"port","title":"{{$t.port_title}}","$required":false,"value":0},
+    {"type":"select","field":"useHttps","title":"{{$t.useHttps_title}}","$required":false,"value":"auto",
+     "options":[{"label":"{{$t.useHttps_option_0}}","value":"auto"},{"label":"{{$t.useHttps_option_1}}","value":"true"},{"label":"{{$t.useHttps_option_2}}","value":"false"}]},
+    {"type":"select","field":"rwsVersion","title":"{{$t.rwsVersion_title}}","$required":false,"value":"auto",
+     "options":[{"label":"{{$t.useHttps_option_0}}","value":"auto"},{"label":"RWS 1.0 (IRC5/RW6)","value":"1.0"},{"label":"RWS 2.0 (OmniCore/RW7)","value":"2.0"}]},
+    {"type":"input","field":"username","title":"{{$t.username_title}}","$required":false,"value":"Default User"},
+    {"type":"input","field":"password","title":"{{$t.password_title}}","$required":false,"value":"robotics","props":{"type":"password"}},
+    {"type":"inputNumber","field":"timeoutMs","title":"{{$t.timeoutMs_title}}","$required":false,"value":5000},
+    {"type":"select","field":"insecureSkipVerify","title":"{{$t.insecureSkipVerify_title}}","$required":false,"value":"true",
+     "options":[{"label":"{{$t.insecureSkipVerify_option_0}}","value":"true"},{"label":"{{$t.insecureSkipVerify_option_1}}","value":"false"}]},
+    {"type":"select","field":"bulkRead","title":"{{$t.bulkRead_title}}","$required":false,"value":"true",
+     "options":[{"label":"{{$t.bulkRead_option_0}}","value":"true"},{"label":"{{$t.bulkRead_option_1}}","value":"false"}]},
+    {"type":"select","field":"sessionRequest","title":"{{$t.sessionRequest_title}}","$required":false,"value":"auto",
+     "options":[{"label":"{{$t.useHttps_option_0}}","value":"auto"},{"label":"{{$t.insecureSkipVerify_option_0}}","value":"true"},{"label":"{{$t.insecureSkipVerify_option_1}}","value":"false"}]},
+    {"type":"inputNumber","field":"maxRequestsPerSecond","title":"{{$t.maxRequestsPerSecond_title}}","$required":false,"value":8},
+    {"type":"select","field":"cartesianSource","title":"{{$t.cartesianSource_title}}","$required":false,"value":"robtarget",
      "options":[{"label":"robtarget","value":"robtarget"},{"label":"cartesian","value":"cartesian"}]},
-    {"type":"input","field":"cartesianTool","title":"工具坐标系","$required":false,"value":"tool0"},
-    {"type":"input","field":"cartesianWobj","title":"工件坐标系","$required":false,"value":"wobj0"},
-    {"type":"select","field":"cartesianCoordinate","title":"坐标系","$required":false,"value":"Base",
+    {"type":"input","field":"cartesianTool","title":"{{$t.cartesianTool_title}}","$required":false,"value":"tool0"},
+    {"type":"input","field":"cartesianWobj","title":"{{$t.cartesianWobj_title}}","$required":false,"value":"wobj0"},
+    {"type":"select","field":"cartesianCoordinate","title":"{{$t.cartesianCoordinate_title}}","$required":false,"value":"Base",
      "options":[{"label":"Base","value":"Base"},{"label":"World","value":"World"},{"label":"Tool","value":"Tool"},{"label":"Wobj","value":"Wobj"}]}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"150px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"endpoint_title":"端点地址","host_title":"设备IP","port_title":"端口(0=自动)","useHttps_title":"协议","useHttps_option_0":"自动","useHttps_option_1":"仅HTTPS","useHttps_option_2":"仅HTTP","rwsVersion_title":"RWS版本","username_title":"用户名","password_title":"密码","timeoutMs_title":"请求超时(ms)","insecureSkipVerify_title":"跳过证书校验","insecureSkipVerify_option_0":"是","insecureSkipVerify_option_1":"否","bulkRead_title":"批量读取","bulkRead_option_0":"开启","bulkRead_option_1":"关闭","sessionRequest_title":"创建RWS会话","maxRequestsPerSecond_title":"每秒请求上限","cartesianSource_title":"笛卡尔来源","cartesianTool_title":"工具坐标系","cartesianWobj_title":"工件坐标系","cartesianCoordinate_title":"坐标系"},"en":{"endpoint_title":"Endpoint URL","host_title":"Device IP","port_title":"Port (0 = auto)","useHttps_title":"Protocol","useHttps_option_0":"Auto","useHttps_option_1":"HTTPS only","useHttps_option_2":"HTTP only","rwsVersion_title":"RWS version","username_title":"Username","password_title":"Password","timeoutMs_title":"Request timeout (ms)","insecureSkipVerify_title":"Skip certificate verification","insecureSkipVerify_option_0":"Yes","insecureSkipVerify_option_1":"No","bulkRead_title":"Batch read","bulkRead_option_0":"On","bulkRead_option_1":"Off","sessionRequest_title":"Create RWS session","maxRequestsPerSecond_title":"Requests per second limit","cartesianSource_title":"Cartesian source","cartesianTool_title":"Tool coordinate system","cartesianWobj_title":"Work object coordinate system","cartesianCoordinate_title":"Coordinate system"}}
   }
 }`
 

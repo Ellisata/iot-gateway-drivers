@@ -83,19 +83,20 @@ const pointScanZeroNote = "当前值为 0"
 // 的点位表"，而实际上没被读到的地址既可能不存在、也可能存在但这一段被拒绝了。
 const pointScanForm = `{
   "rule": [
-    {"type":"select","field":"functionCode","title":"功能区","$required":false,"value":"3",
-     "info":"决定要扫哪一片地址空间，也决定生成的点位地址前缀（保持寄存器 %MW、输入寄存器 %IW、线圈 %MX、离散输入 %IX）",
-     "options":[{"label":"保持寄存器 (FC3)","value":"3"},{"label":"输入寄存器 (FC4)","value":"4"},
-                {"label":"线圈 (FC1)","value":"1"},{"label":"离散输入 (FC2)","value":"2"}]},
-    {"type":"inputNumber","field":"startAddress","title":"起始地址","$required":true,"value":0,
-     "info":"0-based 偏移量，与点位地址写法一致（如起始 100 对应 %MW100）。不是 4xxxx 那种 1-based 编号"},
-    {"type":"inputNumber","field":"count","title":"扫描数量","$required":true,"value":64,
-     "info":"寄存器区单位为寄存器（单帧上限 125，超出会自动分块）；位区单位为位（单帧上限 2000）。数量越大耗时可观：整段扫描有预算上限，超时会返回已完成的部分并把「未扫完」标出来"}
+    {"type":"select","field":"functionCode","title":"{{$t.functionCode_title}}","$required":false,"value":"3",
+     "info":"{{$t.functionCode_info}}",
+     "options":[{"label":"{{$t.functionCode_option_0}}","value":"3"},{"label":"{{$t.functionCode_option_1}}","value":"4"},
+                {"label":"{{$t.functionCode_option_2}}","value":"1"},{"label":"{{$t.functionCode_option_3}}","value":"2"}]},
+    {"type":"inputNumber","field":"startAddress","title":"{{$t.startAddress_title}}","$required":true,"value":0,
+     "info":"{{$t.startAddress_info}}"},
+    {"type":"inputNumber","field":"count","title":"{{$t.count_title}}","$required":true,"value":64,
+     "info":"{{$t.count_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"functionCode_title":"功能区","functionCode_info":"决定要扫哪一片地址空间，也决定生成的点位地址前缀（保持寄存器 %MW、输入寄存器 %IW、线圈 %MX、离散输入 %IX）","functionCode_option_0":"保持寄存器 (FC3)","functionCode_option_1":"输入寄存器 (FC4)","functionCode_option_2":"线圈 (FC1)","functionCode_option_3":"离散输入 (FC2)","startAddress_title":"起始地址","startAddress_info":"0-based 偏移量，与点位地址写法一致（如起始 100 对应 %MW100）。不是 4xxxx 那种 1-based 编号","count_title":"扫描数量","count_info":"寄存器区单位为寄存器（单帧上限 125，超出会自动分块）；位区单位为位（单帧上限 2000）。数量越大耗时可观：整段扫描有预算上限，超时会返回已完成的部分并把「未扫完」标出来"},"en":{"functionCode_title":"Function area","functionCode_info":"Selects the address range to scan and the generated point address prefix (holding register %MW, input register %IW, coil %MX, discrete input %IX)","functionCode_option_0":"Holding register (FC3)","functionCode_option_1":"Input register (FC4)","functionCode_option_2":"Coil (FC1)","functionCode_option_3":"Discrete input (FC2)","startAddress_title":"Start address","startAddress_info":"0-based offset, consistent with point address syntax (start 100 is %MW100). It is not the 1-based 4xxxx numbering","count_title":"Scan count","count_info":"Registers are counted in registers (125 per frame maximum, automatically chunked). Bits are counted in bits (2000 per frame maximum). Larger counts take noticeably longer. A full scan has a time budget. On timeout it returns the completed part and marks the scan as incomplete"}}
   }
 }`
 
@@ -110,6 +111,12 @@ func PointDiscovery() *driver.PointDiscoverySpec {
 		Description: "按功能区扫一段地址，列出**读得到**的地址与当前值。" +
 			"设备不会告诉你它有哪些点位：非零的地址不一定有意义，读得到 0 的也可能是有效值，" +
 			"没列出来的地址既可能不存在、也可能只是这一段被设备拒绝了。请把结果当作候选清单，而不是点位表",
+		TitleI18n: map[string]string{
+			"en": "Scan Modbus address range",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Scans an address range by function area and lists the addresses that **can be read** with their current values. A device does not tell you which points it has: a non-zero address may be meaningless, a readable 0 may be a valid value, and an address not listed may not exist or may just be rejected in this range. Treat the result as a candidate list, not a point table",
+		},
 		FormJSON: json.RawMessage(pointScanForm),
 		// "Word" 是 TypeMap 的键（通用类型名）—— 写成内部裸名 "word" 会被
 		// Meta.Validate 拒掉。寄存器区按 Word 读，这也正是前端的类型下拉初值。

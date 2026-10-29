@@ -71,14 +71,15 @@ const (
 // 参数，用户不必在弹窗里再填一遍，也就不可能填出与采集不一致的值。
 const pointScanForm = `{
   "rule": [
-    {"type":"input","field":"extraDIs","title":"附加数据标识","$required":false,
-     "info":"可留空。字典未收录的厂商私有数据标识，用逗号或换行分隔；每条按地址语法写 DI[:字节数[:小数位[:标志]]]，如 12345678:4:2:s；与字典里的数据标识重复时以你写的格式为准。留空即只扫内置字典",
+    {"type":"input","field":"extraDIs","title":"{{$t.extraDIs_title}}","$required":false,
+     "info":"{{$t.extraDIs_info}}",
      "props":{"type":"textarea","rows":3,"placeholder":"12345678:4:2:s"}}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"extraDIs_title":"附加数据标识","extraDIs_info":"可留空。字典未收录的厂商私有数据标识，用逗号或换行分隔；每条按地址语法写 DI[:字节数[:小数位[:标志]]]，如 12345678:4:2:s；与字典里的数据标识重复时以你写的格式为准。留空即只扫内置字典"},"en":{"extraDIs_title":"Additional data identifiers","extraDIs_info":"Optional. Vendor-private data identifiers not in the dictionary, separated by commas or newlines. Use the address syntax DI[:bytes[:decimals[:signed]]] for each entry, for example 12345678:4:2:s. Entries that duplicate a dictionary identifier take your format. Leave empty to scan only the built-in dictionary"}}
   }
 }`
 
@@ -98,6 +99,12 @@ func PointDiscovery() *driver.PointDiscoverySpec {
 			"「读不到」的条数因此是个正常数字——它只说明这块表没有那个数据标识，不代表链路有问题。" +
 			"少数老表对不支持的数据标识**干脆不答**（而不是回异常应答），这种表每问一个都会等到超时，扫描会很快撞上预算上限；" +
 			"串口设备还受网关侧 7000ms 的预算钳制（插件声明的 20s 会被钳到这个值），大字典扫描会经常标着「未扫完」返回。请把结果当作候选清单，而不是点位表",
+		TitleI18n: map[string]string{
+			"en": "Scan DL/T 645 data identifiers",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Reads every item in the built-in DL/T 645 data identifier dictionary once and lists the ones that **can be read** with their current values. A batch of vendor-private identifiers not in the dictionary can be added with the address syntax. Many dictionary entries are not implemented by a given meter (especially 1997 meters and cheap single-phase meters), so the unreadable count is normally large. It only means the meter does not have that identifier, not that the link is broken. A few old meters simply do not answer unsupported identifiers instead of returning an exception, so each such query waits for a timeout and the scan hits the budget quickly. Serial devices are also capped by the gateway side 7000ms budget (the declared 20s is clamped), so large dictionary scans often return marked as incomplete. Treat the result as a candidate list, not a point table",
+		},
 		FormJSON: json.RawMessage(pointScanForm),
 		// "Float" 是 TypeMap 的键（通用类型名）—— 写成内部裸名 "float" 会被
 		// Meta.Validate 拒掉。字典里绝大多数条目是带小数位的数值量，故取它作

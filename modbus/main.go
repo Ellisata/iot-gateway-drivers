@@ -49,18 +49,19 @@ const (
 // 已去掉 form-create 设计器产生的 _fc_id/name/_fc_drag_tag 等冗余字段。
 const formTCP = `{
   "rule": [
-    {"type":"input","field":"host","title":"设备ip","$required":true},
-    {"type":"inputNumber","field":"port","title":"设备端口","$required":true},
-    {"type":"inputNumber","field":"unitId","title":"站号","$required":true},
-    {"type":"select","field":"wordOrder","title":"字序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]},
-    {"type":"select","field":"byteOrder","title":"字节序","$required":false,
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]}
+    {"type":"input","field":"host","title":"{{$t.host_title}}","$required":true},
+    {"type":"inputNumber","field":"port","title":"{{$t.port_title}}","$required":true},
+    {"type":"inputNumber","field":"unitId","title":"{{$t.unitId_title}}","$required":true},
+    {"type":"select","field":"wordOrder","title":"{{$t.wordOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.wordOrder_option_0}}","value":""},{"label":"{{$t.wordOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.wordOrder_option_2}}","value":"LITTLE_ENDIAN"}]},
+    {"type":"select","field":"byteOrder","title":"{{$t.byteOrder_title}}","$required":false,
+     "options":[{"label":"{{$t.wordOrder_option_0}}","value":""},{"label":"{{$t.wordOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.wordOrder_option_2}}","value":"LITTLE_ENDIAN"}]}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"host_title":"设备ip","port_title":"设备端口","unitId_title":"站号","wordOrder_title":"字序","wordOrder_option_0":"默认","wordOrder_option_1":"高字在前","wordOrder_option_2":"低字在前","byteOrder_title":"字节序"},"en":{"host_title":"Device IP","port_title":"Device port","unitId_title":"Unit ID","wordOrder_title":"Word order","wordOrder_option_0":"Default","wordOrder_option_1":"High word first","wordOrder_option_2":"Low word first","byteOrder_title":"Byte order"}}
   }
 }`
 
@@ -80,31 +81,32 @@ const formTCP = `{
 // 而前端并未给 select 开 filterable/allow-create，写死选项等于配不了。
 const formRTU = `{
   "rule": [
-    {"type":"input","field":"comPort","title":"设备端口","$required":true,"value":"COM1",
-     "info":"如 COM3、COM12（Windows）或 /dev/ttyUSB0、/dev/ttyS0（Linux）；须与网关设备上实际枚举出的端口名完全一致"},
-    {"type":"select","field":"baudRate","title":"波特率","$required":false,"value":"9600",
-     "info":"默认 9600；必须与从站设备完全一致，不一致表现为无应答或 CRC 校验错",
+    {"type":"input","field":"comPort","title":"{{$t.comPort_title}}","$required":true,"value":"COM1",
+     "info":"{{$t.comPort_info}}"},
+    {"type":"select","field":"baudRate","title":"{{$t.baudRate_title}}","$required":false,"value":"9600",
+     "info":"{{$t.baudRate_info}}",
      "options":[{"label":"1200","value":"1200"},{"label":"2400","value":"2400"},{"label":"4800","value":"4800"},{"label":"9600","value":"9600"},{"label":"19200","value":"19200"},{"label":"38400","value":"38400"},{"label":"57600","value":"57600"},{"label":"115200","value":"115200"}]},
-    {"type":"select","field":"dataBits","title":"数据位","$required":false,"value":"8",
-     "info":"默认 8；Modbus RTU 绝大多数设备为 8 位",
+    {"type":"select","field":"dataBits","title":"{{$t.dataBits_title}}","$required":false,"value":"8",
+     "info":"{{$t.dataBits_info}}",
      "options":[{"label":"8","value":"8"},{"label":"7","value":"7"},{"label":"6","value":"6"},{"label":"5","value":"5"}]},
-    {"type":"select","field":"stopBits","title":"停止位","$required":false,"value":"1",
+    {"type":"select","field":"stopBits","title":"{{$t.stopBits_title}}","$required":false,"value":"1",
      "options":[{"label":"1","value":"1"},{"label":"2","value":"2"}]},
-    {"type":"select","field":"parity","title":"校验位","$required":false,"value":"N",
-     "info":"默认无校验；不少设备用偶校验，必须与从站一致",
-     "options":[{"label":"无校验","value":"N"},{"label":"偶校验","value":"E"},{"label":"奇校验","value":"O"}]},
-    {"type":"inputNumber","field":"timeoutMs","title":"单帧超时(ms)","$required":false,"value":5000,
-     "info":"默认 5000；从站响应慢或波特率很低时可调大。过小会把应答帧截断，表现为偶发 CRC 校验错而非明确超时"},
-    {"type":"inputNumber","field":"unitId","title":"站号","$required":true,"value":1},
-    {"type":"select","field":"byteOrder","title":"字节序","$required":false,"value":"",
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]},
-    {"type":"select","field":"wordOrder","title":"字序","$required":false,"value":"",
-     "options":[{"label":"默认","value":""},{"label":"高字在前","value":"BIG_ENDIAN"},{"label":"低字在前","value":"LITTLE_ENDIAN"}]}
+    {"type":"select","field":"parity","title":"{{$t.parity_title}}","$required":false,"value":"N",
+     "info":"{{$t.parity_info}}",
+     "options":[{"label":"{{$t.parity_option_0}}","value":"N"},{"label":"{{$t.parity_option_1}}","value":"E"},{"label":"{{$t.parity_option_2}}","value":"O"}]},
+    {"type":"inputNumber","field":"timeoutMs","title":"{{$t.timeoutMs_title}}","$required":false,"value":5000,
+     "info":"{{$t.timeoutMs_info}}"},
+    {"type":"inputNumber","field":"unitId","title":"{{$t.unitId_title}}","$required":true,"value":1},
+    {"type":"select","field":"byteOrder","title":"{{$t.byteOrder_title}}","$required":false,"value":"",
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]},
+    {"type":"select","field":"wordOrder","title":"{{$t.wordOrder_title}}","$required":false,"value":"",
+     "options":[{"label":"{{$t.byteOrder_option_0}}","value":""},{"label":"{{$t.byteOrder_option_1}}","value":"BIG_ENDIAN"},{"label":"{{$t.byteOrder_option_2}}","value":"LITTLE_ENDIAN"}]}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"comPort_title":"设备端口","comPort_info":"如 COM3、COM12（Windows）或 /dev/ttyUSB0、/dev/ttyS0（Linux）；须与网关设备上实际枚举出的端口名完全一致","baudRate_title":"波特率","baudRate_info":"默认 9600；必须与从站设备完全一致，不一致表现为无应答或 CRC 校验错","dataBits_title":"数据位","dataBits_info":"默认 8；Modbus RTU 绝大多数设备为 8 位","stopBits_title":"停止位","parity_title":"校验位","parity_info":"默认无校验；不少设备用偶校验，必须与从站一致","parity_option_0":"无校验","parity_option_1":"偶校验","parity_option_2":"奇校验","timeoutMs_title":"单帧超时(ms)","timeoutMs_info":"默认 5000；从站响应慢或波特率很低时可调大。过小会把应答帧截断，表现为偶发 CRC 校验错而非明确超时","unitId_title":"站号","byteOrder_title":"字节序","byteOrder_option_0":"默认","byteOrder_option_1":"高字在前","byteOrder_option_2":"低字在前","wordOrder_title":"字序"},"en":{"comPort_title":"Device port","comPort_info":"For example COM3 or COM12 (Windows) or /dev/ttyUSB0 or /dev/ttyS0 (Linux). It must exactly match the port name enumerated on the gateway host","baudRate_title":"Baud rate","baudRate_info":"Defaults to 9600. It must match the slave device exactly. A mismatch shows up as no response or a CRC error","dataBits_title":"Data bits","dataBits_info":"Defaults to 8. Most Modbus RTU devices use 8 data bits","stopBits_title":"Stop bits","parity_title":"Parity","parity_info":"Defaults to no parity. Many devices use even parity, which must match the slave","parity_option_0":"None","parity_option_1":"Even","parity_option_2":"Odd","timeoutMs_title":"Frame timeout (ms)","timeoutMs_info":"Defaults to 5000. Increase it when the slave responds slowly or the baud rate is very low. Too small truncates the response frame, which shows up as intermittent CRC errors rather than a clear timeout","unitId_title":"Unit ID","byteOrder_title":"Byte order","byteOrder_option_0":"Default","byteOrder_option_1":"High word first","byteOrder_option_2":"Low word first","wordOrder_title":"Word order"}}
   }
 }`
 

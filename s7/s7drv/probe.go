@@ -79,15 +79,16 @@ const (
 // PLC 上连接资源的**地址**，填错表现为"端口开着却连不上"，从错误信息里完全看不出来。
 const scanForm = `{
   "rule": [
-    {"type":"input","field":"rackSlots","title":"机架/槽位","$required":false,"value":"0/1,0/2",
-     "info":"逗号分隔的 rack/slot 候选，最多 4 组，按顺序尝试，第一个连上的写入设备配置。S7-1200/1500 多为 0/1，S7-300/400 多为 0/2；确认某 IP 上确实有 PLC 却没扫到，先放宽这里"},
-    {"type":"inputNumber","field":"connectTimeoutMs","title":"连接超时(ms)","$required":false,"value":1500,
-     "info":"默认 1500。兼作 TCP 拨号与 ISO-on-TCP 协商的超时。目标不可达时靠它止损，扫一个网段的总耗时主要由它决定，调小可显著加快扫描，代价是慢设备可能被漏掉"}
+    {"type":"input","field":"rackSlots","title":"{{$t.rackSlots_title}}","$required":false,"value":"0/1,0/2",
+     "info":"{{$t.rackSlots_info}}"},
+    {"type":"inputNumber","field":"connectTimeoutMs","title":"{{$t.connectTimeoutMs_title}}","$required":false,"value":1500,
+     "info":"{{$t.connectTimeoutMs_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"rackSlots_title":"机架/槽位","rackSlots_info":"逗号分隔的 rack/slot 候选，最多 4 组，按顺序尝试，第一个连上的写入设备配置。S7-1200/1500 多为 0/1，S7-300/400 多为 0/2；确认某 IP 上确实有 PLC 却没扫到，先放宽这里","connectTimeoutMs_title":"连接超时(ms)","connectTimeoutMs_info":"默认 1500。兼作 TCP 拨号与 ISO-on-TCP 协商的超时。目标不可达时靠它止损，扫一个网段的总耗时主要由它决定，调小可显著加快扫描，代价是慢设备可能被漏掉"},"en":{"rackSlots_title":"Rack/slot","rackSlots_info":"Comma-separated rack/slot candidates, up to 4, tried in order. The first one that connects is written into the device config. S7-1200/1500 are usually 0/1 and S7-300/400 are usually 0/2. If an IP definitely has a PLC but the scan misses it, widen this first","connectTimeoutMs_title":"Connect timeout (ms)","connectTimeoutMs_info":"Defaults to 1500. Also used as the TCP dial and ISO-on-TCP negotiation timeout. It bounds the wait for unreachable targets and largely determines how long a subnet scan takes. Lowering it speeds up the scan at the cost of missing slow devices"}}
   }
 }`
 
@@ -103,6 +104,12 @@ func Discovery() *driver.DiscoverySpec {
 			"并尝试读 CPU 标识（SZL 0x001C）补上型号与序列号。" +
 			"机架/槽位按候选逐个尝试；102 端口有服务但协商不出 S7 会话的主机不上报" +
 			"（避免把同样监听 102 的 HMI 面板报成 PLC）",
+		TitleI18n: map[string]string{
+			"en": "Siemens S7 scan",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Connects to port 102 (ISO-on-TCP) on each host. A completed S7 session negotiation identifies an S7 device, and the CPU identification (SZL 0x001C) is read to fill in model and serial number. Rack/slot candidates are tried in order. Hosts with a service on port 102 that cannot negotiate an S7 session are not reported, which avoids reporting HMI panels that also listen on 102 as PLCs",
+		},
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,

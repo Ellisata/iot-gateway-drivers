@@ -102,26 +102,27 @@ var pointScanDevices = []string{"D", "M", "X", "Y", "L", "B", "W", "R", "ZR"}
 //     驱动支持，但产出的是 M0/M16/M32 这种"看着像位、其实是 16 点一组"的名字。
 const pointScanForm = `{
   "rule": [
-    {"type":"select","field":"device","title":"软元件","$required":false,"value":"D",
-     "info":"决定扫哪一片地址空间。带「位」的软元件只能用位粒度；X/Y 的地址按八进制解释，其余按十进制",
-     "options":[{"label":"D 数据寄存器（字）","value":"D"},{"label":"M 内部继电器（位）","value":"M"},
-                {"label":"X 输入继电器（位·八进制）","value":"X"},{"label":"Y 输出继电器（位·八进制）","value":"Y"},
-                {"label":"L 锁存继电器（位）","value":"L"},{"label":"B 链接继电器（位）","value":"B"},
-                {"label":"W 链接寄存器（字）","value":"W"},{"label":"R 文件寄存器（字）","value":"R"},
-                {"label":"ZR 文件寄存器·扩展（字）","value":"ZR"}]},
-    {"type":"input","field":"start","title":"起始地址","$required":true,"value":"0",
-     "info":"只填地址数字，不带软元件前缀（起始 D100 填 100）。**X/Y 按八进制解释**（填 30 表示 X30，即十进制的 24），其余软元件按十进制"},
-    {"type":"select","field":"width","title":"粒度","$required":false,"value":"word",
-     "info":"每个点位占多少。位粒度下字软元件写成 D100.5（字内位号 0~15）；位软元件只能用位粒度",
-     "options":[{"label":"位 BOOL（M10 / D100.5）","value":"bit"},{"label":"字 WORD（D100）","value":"word"},
-                {"label":"双字 DWORD（D100，占 D100~D101）","value":"dword"}]},
-    {"type":"inputNumber","field":"count","title":"点位数","$required":true,"value":64,
-     "info":"要扫多少个点位。数量越大耗时可观：整段扫描有预算与请求数两条上限，触顶会返回已完成的部分并把「未扫完」标出来。在地址空间连续的软元件上（D/M/L/R/ZR…），读到第一个读不到的地址就会停下，后面的地址一律标为读不到；X/Y/B/W 的地址按槽位与模块分配、中段可能有空洞，因此会逐段降级继续往后扫"}
+    {"type":"select","field":"device","title":"{{$t.device_title}}","$required":false,"value":"D",
+     "info":"{{$t.device_info}}",
+     "options":[{"label":"{{$t.device_option_0}}","value":"D"},{"label":"{{$t.device_option_1}}","value":"M"},
+                {"label":"{{$t.device_option_2}}","value":"X"},{"label":"{{$t.device_option_3}}","value":"Y"},
+                {"label":"{{$t.device_option_4}}","value":"L"},{"label":"{{$t.device_option_5}}","value":"B"},
+                {"label":"{{$t.device_option_6}}","value":"W"},{"label":"{{$t.device_option_7}}","value":"R"},
+                {"label":"{{$t.device_option_8}}","value":"ZR"}]},
+    {"type":"input","field":"start","title":"{{$t.start_title}}","$required":true,"value":"0",
+     "info":"{{$t.start_info}}"},
+    {"type":"select","field":"width","title":"{{$t.width_title}}","$required":false,"value":"word",
+     "info":"{{$t.width_info}}",
+     "options":[{"label":"{{$t.width_option_0}}","value":"bit"},{"label":"{{$t.width_option_1}}","value":"word"},
+                {"label":"{{$t.width_option_2}}","value":"dword"}]},
+    {"type":"inputNumber","field":"count","title":"{{$t.count_title}}","$required":true,"value":64,
+     "info":"{{$t.count_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"device_title":"软元件","device_info":"决定扫哪一片地址空间。带「位」的软元件只能用位粒度；X/Y 的地址按八进制解释，其余按十进制","device_option_0":"D 数据寄存器（字）","device_option_1":"M 内部继电器（位）","device_option_2":"X 输入继电器（位·八进制）","device_option_3":"Y 输出继电器（位·八进制）","device_option_4":"L 锁存继电器（位）","device_option_5":"B 链接继电器（位）","device_option_6":"W 链接寄存器（字）","device_option_7":"R 文件寄存器（字）","device_option_8":"ZR 文件寄存器·扩展（字）","start_title":"起始地址","start_info":"只填地址数字，不带软元件前缀（起始 D100 填 100）。**X/Y 按八进制解释**（填 30 表示 X30，即十进制的 24），其余软元件按十进制","width_title":"粒度","width_info":"每个点位占多少。位粒度下字软元件写成 D100.5（字内位号 0~15）；位软元件只能用位粒度","width_option_0":"位 BOOL（M10 / D100.5）","width_option_1":"字 WORD（D100）","width_option_2":"双字 DWORD（D100，占 D100~D101）","count_title":"点位数","count_info":"要扫多少个点位。数量越大耗时可观：整段扫描有预算与请求数两条上限，触顶会返回已完成的部分并把「未扫完」标出来。在地址空间连续的软元件上（D/M/L/R/ZR…），读到第一个读不到的地址就会停下，后面的地址一律标为读不到；X/Y/B/W 的地址按槽位与模块分配、中段可能有空洞，因此会逐段降级继续往后扫"},"en":{"device_title":"Device type","device_info":"Selects the address space to scan. Bit device types only accept bit granularity. X/Y addresses are interpreted as octal, everything else as decimal","device_option_0":"D Data register (word)","device_option_1":"M Internal relay (bit)","device_option_2":"X Input relay (bit, octal)","device_option_3":"Y Output relay (bit, octal)","device_option_4":"L Latch relay (bit)","device_option_5":"B Link relay (bit)","device_option_6":"W Link register (word)","device_option_7":"R File register (word)","device_option_8":"ZR Extended file register (word)","start_title":"Start address","start_info":"Enter only the address number without the device prefix (start D100 is 100). **X/Y are interpreted as octal** (30 means X30, decimal 24), other device types are decimal","width_title":"Granularity","width_info":"Size of each point. In bit granularity a word device is written as D100.5 (bit 0-15 within the word). Bit devices only accept bit granularity","width_option_0":"Bit BOOL (M10 / D100.5)","width_option_1":"Word (16-bit, D100)","width_option_2":"Double word (32-bit, D100-D101)","count_title":"Point count","count_info":"Number of points to scan. Larger counts take noticeably longer. A full scan has both a time budget and a request limit. Hitting either returns the completed part and marks the scan as incomplete. On contiguous device types (D/M/L/R/ZR...) scanning stops at the first unreadable address and later addresses are all reported as unreadable. X/Y/B/W addresses are allocated by slot and module and can contain holes, so scanning degrades section by section and continues past them"}}
   }
 }`
 
@@ -145,6 +146,12 @@ func PointDiscovery() *driver.PointDiscoverySpec {
 			"位软元件（M/L/X/Y/B…）只有位粒度；X/Y 的地址按八进制解释。" +
 			"串口设备在网关侧 7000ms 的预算钳制下，大范围扫描会经常标着「未扫完」返回。" +
 			"请把结果当作候选清单，而不是点位表",
+		TitleI18n: map[string]string{
+			"en": "Scan MC device types",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Scans an address range by device type and lists the addresses that **can be read** with their current values. A device does not tell you which points it has: a non-zero address may be meaningless, a readable 0 may be a valid value, and an address not listed may not exist or may just be rejected in this range. On contiguous device types such as D/M/L/R/ZR, scanning stops at the first unreadable address and later addresses are reported as unreadable. X/Y/B/W are allocated by slot and module and can contain holes, so scanning degrades section by section and continues past them (slower, but it does not cut the list at a hole). Bit device types (M/L/X/Y/B...) only accept bit granularity, and X/Y addresses are interpreted as octal. Serial devices under the gateway side 7000ms budget often return large scans marked as incomplete. Treat the result as a candidate list, not a point table",
+		},
 		FormJSON: json.RawMessage(pointScanForm),
 		// "Word" 是 TypeMap 的键（通用类型名）—— 写成内部裸名 "word" 会被
 		// Meta.Validate 拒掉。字是 MC 上最常见的点位粒度，故用作下拉初值。

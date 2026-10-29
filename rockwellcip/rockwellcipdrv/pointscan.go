@@ -140,6 +140,12 @@ func PointDiscovery() *driver.PointDiscoverySpec {
 			"④ 枚举每个标签要一次请求，标签上千时可能超出预算而**整次失败**：" +
 			"本协议是原生枚举（一次列完），中途停下来拿不到部分结果，所以那时会给一句明确的报错，" +
 			"而不是一份残缺的清单",
+		TitleI18n: map[string]string{
+			"en": "Enumerate Rockwell tags",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Uses the CIP Symbol Object (class 0x6B) to **natively enumerate** all tags on the controller. This is one of the few protocols that can truly list points: what is listed is the **tag name itself**, not the addresses readable in some range. Four limits to know first: (1) sampling values are **not read**, only tags and types are listed, because reading values would double the request count. (2) Array tags list **only element 0**, since devices do not provide dimension information, so fill in the rest by hand. (3) Structures (including TIMER/COUNTER/UDT) and tags such as LINT and BYTE/WORD/DWORD that have no common type mapping **are skipped**. The skip count is visible under not listed, and not listed does not mean unreadable. (4) Enumerating each tag takes one request, so thousands of tags can exceed the budget and **fail the whole scan**. This protocol enumerates natively and finishes in one pass, so stopping halfway yields no partial result. It returns an explicit error instead of an incomplete list",
+		},
 		FormJSON: json.RawMessage(pointScanForm),
 		// "Long" 是 TypeMap 的键（系统里叫 DINT，Logix 的默认整型）——
 		// 写成内部裸名 "int32" 会被 Meta.Validate 拒掉。

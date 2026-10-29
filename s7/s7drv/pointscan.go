@@ -132,25 +132,26 @@ func (w scanWidth) commonType() string {
 // 让 DB 无法按绝对地址读，那种 DB 整段都会读不到。
 const pointScanForm = `{
   "rule": [
-    {"type":"select","field":"area","title":"区域","$required":false,"value":"DB",
-     "info":"决定读哪一片地址空间，也决定生成的地址写法：DB 为 DB1.DBW0，M 为 MW0，I 为 IW0，Q 为 QW0",
-     "options":[{"label":"DB 数据块","value":"DB"},{"label":"M 标志位区","value":"M"},
-                {"label":"I 输入区","value":"I"},{"label":"Q 输出区","value":"Q"}]},
-    {"type":"inputNumber","field":"dbNumber","title":"DB 号","$required":false,"value":1,
-     "info":"仅「区域」选 DB 时有效。DB 必须是 PLC 里已存在的非空块；若该 DB 在 TIA Portal 里勾了「优化的块访问」（1200/1500 默认勾选），则无法按绝对地址读取，整段都会读不到，需要先取消勾选并重新下载"},
-    {"type":"inputNumber","field":"startOffset","title":"起始字节偏移","$required":true,"value":0,
-     "info":"0-based 字节偏移，与点位地址写法一致（起始 100 对应 DB1.DBW100）。既不是 1-based，也不是位偏移"},
-    {"type":"select","field":"width","title":"粒度","$required":false,"value":"word",
-     "info":"每个点位读多少字节，也决定生成的地址后缀（B/W/D）。位模式下每个字节展开成 8 个点位",
-     "options":[{"label":"位 BOOL（DB1.DBX0.1）","value":"bit"},{"label":"字节 BYTE（DB1.DBB0）","value":"byte"},
-                {"label":"字 WORD（DB1.DBW0）","value":"word"},{"label":"双字 DWORD（DB1.DBD0）","value":"dword"}]},
-    {"type":"inputNumber","field":"count","title":"点位数","$required":true,"value":64,
-     "info":"要扫多少个点位（位模式下即位数）。数量越大耗时可观：整段扫描有预算与请求数两条上限，触顶会返回已完成的部分并把「未扫完」标出来"}
+    {"type":"select","field":"area","title":"{{$t.area_title}}","$required":false,"value":"DB",
+     "info":"{{$t.area_info}}",
+     "options":[{"label":"{{$t.area_option_0}}","value":"DB"},{"label":"{{$t.area_option_1}}","value":"M"},
+                {"label":"{{$t.area_option_2}}","value":"I"},{"label":"{{$t.area_option_3}}","value":"Q"}]},
+    {"type":"inputNumber","field":"dbNumber","title":"{{$t.dbNumber_title}}","$required":false,"value":1,
+     "info":"{{$t.dbNumber_info}}"},
+    {"type":"inputNumber","field":"startOffset","title":"{{$t.startOffset_title}}","$required":true,"value":0,
+     "info":"{{$t.startOffset_info}}"},
+    {"type":"select","field":"width","title":"{{$t.width_title}}","$required":false,"value":"word",
+     "info":"{{$t.width_info}}",
+     "options":[{"label":"{{$t.width_option_0}}","value":"bit"},{"label":"{{$t.width_option_1}}","value":"byte"},
+                {"label":"{{$t.width_option_2}}","value":"word"},{"label":"{{$t.width_option_3}}","value":"dword"}]},
+    {"type":"inputNumber","field":"count","title":"{{$t.count_title}}","$required":true,"value":64,
+     "info":"{{$t.count_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"area_title":"区域","area_info":"决定读哪一片地址空间，也决定生成的地址写法：DB 为 DB1.DBW0，M 为 MW0，I 为 IW0，Q 为 QW0","area_option_0":"DB 数据块","area_option_1":"M 标志位区","area_option_2":"I 输入区","area_option_3":"Q 输出区","dbNumber_title":"DB 号","dbNumber_info":"仅「区域」选 DB 时有效。DB 必须是 PLC 里已存在的非空块；若该 DB 在 TIA Portal 里勾了「优化的块访问」（1200/1500 默认勾选），则无法按绝对地址读取，整段都会读不到，需要先取消勾选并重新下载","startOffset_title":"起始字节偏移","startOffset_info":"0-based 字节偏移，与点位地址写法一致（起始 100 对应 DB1.DBW100）。既不是 1-based，也不是位偏移","width_title":"粒度","width_info":"每个点位读多少字节，也决定生成的地址后缀（B/W/D）。位模式下每个字节展开成 8 个点位","width_option_0":"位 BOOL（DB1.DBX0.1）","width_option_1":"字节 BYTE（DB1.DBB0）","width_option_2":"字 WORD（DB1.DBW0）","width_option_3":"双字 DWORD（DB1.DBD0）","count_title":"点位数","count_info":"要扫多少个点位（位模式下即位数）。数量越大耗时可观：整段扫描有预算与请求数两条上限，触顶会返回已完成的部分并把「未扫完」标出来"},"en":{"area_title":"Area","area_info":"Selects the address space to read and the generated address style: DB becomes DB1.DBW0, M becomes MW0, I becomes IW0 and Q becomes QW0","area_option_0":"DB Data block","area_option_1":"M Flag area","area_option_2":"I Input area","area_option_3":"Q Output area","dbNumber_title":"DB number","dbNumber_info":"Only valid when Area is DB. The DB must already exist and be non-empty in the PLC. If the DB has optimized block access enabled in TIA Portal (the default for 1200/1500), absolute addressing does not work and the whole range is unreadable. Disable it and download again first","startOffset_title":"Start byte offset","startOffset_info":"0-based byte offset, consistent with point address syntax (start 100 maps to DB1.DBW100). It is neither 1-based nor a bit offset","width_title":"Granularity","width_info":"Bytes read per point, which also determines the generated address suffix (B/W/D). In bit mode each byte expands to 8 points","width_option_0":"Bit BOOL (DB1.DBX0.1)","width_option_1":"Byte (8-bit, DB1.DBB0)","width_option_2":"Word (16-bit, DB1.DBW0)","width_option_3":"Double word (32-bit, DB1.DBD0)","count_title":"Point count","count_info":"Number of points to scan (bits in bit mode). Larger counts take noticeably longer. A full scan has both a time budget and a request limit. Hitting either returns the completed part and marks the scan as incomplete"}}
   }
 }`
 
@@ -166,6 +167,12 @@ func PointDiscovery() *driver.PointDiscoverySpec {
 			"没列出来的地址既可能不存在、也可能只是这一段被设备拒绝了。" +
 			"S7-1200/1500 上勾了「优化的块访问」的 DB 无法按绝对地址读取，会整段读不到。" +
 			"请把结果当作候选清单，而不是点位表",
+		TitleI18n: map[string]string{
+			"en": "Scan S7 address range",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Scans an address range in an area and lists the addresses that **can be read** with their current values. A device does not tell you which points it has: a non-zero address may be meaningless, a readable 0 may be a valid value, and an address not listed may not exist or may just be rejected in this range. DBs with optimized block access enabled on S7-1200/1500 cannot be read by absolute address and the whole range is unreadable. Treat the result as a candidate list, not a point table",
+		},
 		FormJSON: json.RawMessage(pointScanForm),
 		// "Word" 是 TypeMap 的键（通用类型名）—— 写成内部裸名 "word" 会被
 		// Meta.Validate 拒掉。字是最常见的 S7 点位粒度，故用作下拉初值。

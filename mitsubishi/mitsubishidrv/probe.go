@@ -59,13 +59,14 @@ const (
 // 就是慢，而用户不会想到那个数字就是原因。
 const scanForm = `{
   "rule": [
-    {"type":"inputNumber","field":"timeoutMs","title":"单目标超时(ms)","$required":false,"value":1500,
-     "info":"默认 1500。一次探测只有一次「发帧-等应答」，目标不可达时每台就会等满这个时间，因此扫描一个网段的总耗时基本由它决定：调小可显著加快扫描，代价是慢设备可能被漏掉"}
+    {"type":"inputNumber","field":"timeoutMs","title":"{{$t.timeoutMs_title}}","$required":false,"value":1500,
+     "info":"{{$t.timeoutMs_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"timeoutMs_title":"单目标超时(ms)","timeoutMs_info":"默认 1500。一次探测只有一次「发帧-等应答」，目标不可达时每台就会等满这个时间，因此扫描一个网段的总耗时基本由它决定：调小可显著加快扫描，代价是慢设备可能被漏掉"},"en":{"timeoutMs_title":"Per-target timeout (ms)","timeoutMs_info":"Defaults to 1500. A probe performs one send-and-wait. An unreachable target waits the full time, so this largely determines how long a subnet scan takes. Lowering it speeds up the scan at the cost of missing slow devices"}}
   }
 }`
 
@@ -86,6 +87,12 @@ func DiscoveryTCP() *driver.DiscoverySpec {
 			"收到子头与结束码自洽的应答即认定是三菱 PLC。" +
 			"判据是「读到一次软元件数据」而不是「端口开着」——端口上跑着别的服务不会回出 MC 形状的应答。" +
 			"设备回结束码错误（设备指定错误、地址范围外等）同样算命中：它**应答了**，只是拒绝了这次读取",
+		TitleI18n: map[string]string{
+			"en": "Mitsubishi MC scan",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Connects to 5007/TCP on each host and sends one MC batch read command (3E frame, read one word at D0). A response with a consistent subheader and end code identifies a Mitsubishi PLC. The criterion is reading device data once, not an open port, so other services do not return MC shaped responses. A device returning an end-code error (device specification error, address out of range and so on) still counts as a hit: it **answered**, it just refused this read",
+		},
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,

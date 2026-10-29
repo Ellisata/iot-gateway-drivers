@@ -1011,6 +1011,9 @@ func TestPointScanDeviceOptionsMatchDriver(t *testing.T) {
 			Field   string   `json:"field"`
 			Options []option `json:"options"`
 		} `json:"rule"`
+		Options struct {
+			Language map[string]map[string]string `json:"language"`
+		} `json:"options"`
 	}
 	if err := json.Unmarshal([]byte(pointScanForm), &form); err != nil {
 		t.Fatalf("点位扫描表单不是合法 JSON: %v", err)
@@ -1038,16 +1041,34 @@ func TestPointScanDeviceOptionsMatchDriver(t *testing.T) {
 			t.Errorf("表单里的软元件 %q 不在驱动表 mcDevices 里 —— 选得到但扫不了", o.Value)
 			continue
 		}
-		if got := strings.Contains(o.Label, "（位"); got != dev.isBit {
+		// 表单文案已改为数据驱动：先按 zh-cn 解析 {{$t.key}}，再校验中文语义。
+		label := resolveFormLabel(t, o.Label, form.Options.Language)
+		if got := strings.Contains(label, "（位"); got != dev.isBit {
 			t.Errorf("软元件 %s 的标签 %q 与驱动的分类不符（isBit=%v）—— "+
 				"标签写着「位」而驱动按字处理，会让用户按位去理解一份字为单位的结果",
-				dev.name, o.Label, dev.isBit)
+				dev.name, label, dev.isBit)
 		}
-		if got := strings.Contains(o.Label, "八进制"); got != dev.octal {
+		if got := strings.Contains(label, "八进制"); got != dev.octal {
 			t.Errorf("软元件 %s 的标签 %q 与驱动的分类不符（octal=%v）—— "+
-				"八进制标注错了，用户会照着十进制去填起始地址", dev.name, o.Label, dev.octal)
+				"八进制标注错了，用户会照着十进制去填起始地址", dev.name, label, dev.octal)
 		}
 	}
+}
+
+// resolveFormLabel 把 {{$t.key}} 解析成 zh-cn 文案；普通字面量原样返回。
+// 表单文案存在 options.language 里（随表单数据走），断言中文语义前必须先解析。
+func resolveFormLabel(t *testing.T, label string, language map[string]map[string]string) string {
+	t.Helper()
+	const prefix = "{{$t."
+	if !strings.HasPrefix(label, prefix) || !strings.HasSuffix(label, "}}") {
+		return label
+	}
+	key := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(label, prefix), "}}"))
+	text := language["zh-cn"][key]
+	if text == "" {
+		t.Fatalf("表单文案 %q 在 zh-cn 里没有译文", label)
+	}
+	return text
 }
 
 // TestPointDiscoverySpec 能力声明里几个决定前端行为的取值。

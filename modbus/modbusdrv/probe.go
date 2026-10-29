@@ -87,17 +87,18 @@ const (
 // 所以默认只探 1，要扫范围必须显式写。
 const scanForm = `{
   "rule": [
-    {"type":"input","field":"unitIds","title":"站号","$required":false,"value":"1",
-     "info":"要探测的从站地址，逗号分隔（如 1,2,5）或区间（如 1-8），最多 32 个。默认只探 1。注意：原生 TCP PLC 多数忽略站号，对任何站号都应答，扫区间会把同一台设备报成多台；只有经 Modbus TCP→RTU 网关接入时站号才有区分意义"},
-    {"type":"inputNumber","field":"dialTimeoutMs","title":"拨号超时(ms)","$required":false,"value":1500,
-     "info":"默认 1500。目标不可达时靠它止损；扫一个网段的总耗时主要由它决定，调小可显著加快扫描，代价是慢设备可能被漏掉"},
-    {"type":"inputNumber","field":"requestTimeoutMs","title":"单帧超时(ms)","$required":false,"value":1000,
-     "info":"默认 1000。设备应答慢时调大；过小会把慢设备的应答判成\"没有设备\""}
+    {"type":"input","field":"unitIds","title":"{{$t.unitIds_title}}","$required":false,"value":"1",
+     "info":"{{$t.unitIds_info}}"},
+    {"type":"inputNumber","field":"dialTimeoutMs","title":"{{$t.dialTimeoutMs_title}}","$required":false,"value":1500,
+     "info":"{{$t.dialTimeoutMs_info}}"},
+    {"type":"inputNumber","field":"requestTimeoutMs","title":"{{$t.requestTimeoutMs_title}}","$required":false,"value":1000,
+     "info":"{{$t.requestTimeoutMs_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"unitIds_title":"站号","unitIds_info":"要探测的从站地址，逗号分隔（如 1,2,5）或区间（如 1-8），最多 32 个。默认只探 1。注意：原生 TCP PLC 多数忽略站号，对任何站号都应答，扫区间会把同一台设备报成多台；只有经 Modbus TCP→RTU 网关接入时站号才有区分意义","dialTimeoutMs_title":"拨号超时(ms)","dialTimeoutMs_info":"默认 1500。目标不可达时靠它止损；扫一个网段的总耗时主要由它决定，调小可显著加快扫描，代价是慢设备可能被漏掉","requestTimeoutMs_title":"单帧超时(ms)","requestTimeoutMs_info":"默认 1000。设备应答慢时调大；过小会把慢设备的应答判成\"没有设备\""},"en":{"unitIds_title":"Unit ID","unitIds_info":"Slave addresses to probe, separated by commas (for example 1,2,5) or ranges (for example 1-8), up to 32. Only 1 is probed by default. Note that native TCP PLCs usually ignore the unit ID and answer to any value, so scanning a range reports the same device several times. Unit IDs only distinguish devices behind a Modbus TCP to RTU gateway","dialTimeoutMs_title":"Dial timeout (ms)","dialTimeoutMs_info":"Defaults to 1500. It bounds the wait for unreachable targets and largely determines how long a subnet scan takes. Lowering it speeds up the scan at the cost of missing slow devices","requestTimeoutMs_title":"Frame timeout (ms)","requestTimeoutMs_info":"Defaults to 1000. Increase it when devices respond slowly. Too small classifies slow devices as absent"}}
   }
 }`
 
@@ -109,6 +110,12 @@ func Discovery() *driver.DiscoverySpec {
 	return &driver.DiscoverySpec{
 		Title:       "Modbus TCP 扫描",
 		Description: "逐主机拨号 502 端口，先读设备标识（FC43/14），不支持则用一次寄存器读取判定是否为 Modbus 从站",
+		TitleI18n: map[string]string{
+			"en": "Modbus TCP scan",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Dials port 502 on each host, tries reading the device identification (FC43/14) first, and falls back to one register read to decide whether it is a Modbus slave",
+		},
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,

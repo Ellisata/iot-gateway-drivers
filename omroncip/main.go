@@ -60,13 +60,14 @@ const (
 // 直接写在 device.protocol_json 里即可，解析见 omroncipdrv/config.go。
 const formCIP = `{
   "rule": [
-    {"type":"input","field":"host","title":"设备IP","$required":true},
-    {"type":"inputNumber","field":"port","title":"设备端口","$required":true}
+    {"type":"input","field":"host","title":"{{$t.host_title}}","$required":true},
+    {"type":"inputNumber","field":"port","title":"{{$t.port_title}}","$required":true}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"host_title":"设备IP","port_title":"设备端口"},"en":{"host_title":"Device IP","port_title":"Device port"}}
   }
 }`
 

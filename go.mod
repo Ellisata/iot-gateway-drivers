@@ -3,7 +3,7 @@ module github.com/Ellisata/iot-gateway-drivers
 go 1.26.0
 
 require (
-	github.com/Ellisata/iot-gateway-sdk v0.1.0
+	github.com/Ellisata/iot-gateway-sdk v0.2.0
 	github.com/Ellisata/iot-gateway-sdk/testkit v0.1.0
 	github.com/goburrow/modbus v0.1.0
 	github.com/goburrow/serial v0.1.0

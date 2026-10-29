@@ -79,13 +79,14 @@ const (
 // 就是慢，而用户不会想到那个数字就是原因。
 const scanForm = `{
   "rule": [
-    {"type":"inputNumber","field":"timeoutMs","title":"单目标超时(ms)","$required":false,"value":3000,
-     "info":"默认 3000。一次探测要完成 TCP 连接与 SecureChannel 握手，再读一次端点表；目标不可达或不是 OPC UA 时会等满这个时间，因此扫描一个网段的总耗时基本由它决定：调小可显著加快扫描，代价是慢服务器可能被漏掉"}
+    {"type":"inputNumber","field":"timeoutMs","title":"{{$t.timeoutMs_title}}","$required":false,"value":3000,
+     "info":"{{$t.timeoutMs_info}}"}
   ],
   "options": {
     "form":{"inline":false,"hideRequiredAsterisk":false,"labelPosition":"right","size":"default","labelWidth":"125px"},
     "resetBtn":{"show":false,"innerText":"重置"},
-    "submitBtn":{"show":false,"innerText":"提交"}
+    "submitBtn":{"show":false,"innerText":"提交"},
+    "language":{"zh-cn":{"timeoutMs_title":"单目标超时(ms)","timeoutMs_info":"默认 3000。一次探测要完成 TCP 连接与 SecureChannel 握手，再读一次端点表；目标不可达或不是 OPC UA 时会等满这个时间，因此扫描一个网段的总耗时基本由它决定：调小可显著加快扫描，代价是慢服务器可能被漏掉"},"en":{"timeoutMs_title":"Per-target timeout (ms)","timeoutMs_info":"Defaults to 3000. A probe must connect TCP, complete the SecureChannel handshake and read the endpoint list once. An unreachable target or a non-OPC UA server waits the full time, so this largely determines how long a subnet scan takes. Lowering it speeds up the scan at the cost of missing slow servers"}}
   }
 }`
 
@@ -105,6 +106,12 @@ func Discovery() *driver.DiscoverySpec {
 			"**两点必须知道**：① 本探测**不校验认证**，用户名密码错误、证书不受信的服务器照样会被列出来，" +
 			"那要到设备采集时才会暴露；② 服务器只提供加密端点（无 None 安全策略）时仍会列出，" +
 			"但网关当前未实现客户端证书，建了也连不上 —— 结果里会明确标注",
+		TitleI18n: map[string]string{
+			"en": "OPC UA scan",
+		},
+		DescriptionI18n: map[string]string{
+			"en": "Connects to 4840/TCP on each host, establishes a SecureChannel and reads the endpoint list (GetEndpoints) once. A self-consistent response identifies an OPC UA server. The criterion is reading a real endpoint list, not an open port, so other services do not return OPC UA shaped responses. **Two things to know**: (1) this probe does **not** verify authentication, so servers with wrong credentials or untrusted certificates are still listed and only fail at collection time. (2) Servers that only offer encrypted endpoints (no None security policy) are still listed, but the gateway does not implement client certificates yet and cannot connect. The result says so explicitly",
+		},
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,
