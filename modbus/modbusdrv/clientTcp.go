@@ -142,6 +142,60 @@ func (c *ModbusClient) ReadDiscreteInputs(address, quantity uint16) ([]byte, err
 	return results, nil
 }
 
+// WriteSingleCoil 写单个线圈（功能码 05）。
+func (c *ModbusClient) WriteSingleCoil(address uint16, value bool) error {
+	c.mu.RLock()
+	client := c.client
+	c.mu.RUnlock()
+
+	var raw uint16
+	if value {
+		raw = 0xFF00
+	}
+	if _, err := client.WriteSingleCoil(address, raw); err != nil {
+		if !isProtocolErr(err) {
+			c.markDisconnected()
+		}
+		return fmt.Errorf("modbus: write single coil at %d failed: %w", address, err)
+	}
+	return nil
+}
+
+// WriteSingleRegister 写单个保持寄存器（功能码 06）。
+func (c *ModbusClient) WriteSingleRegister(address, value uint16) error {
+	c.mu.RLock()
+	client := c.client
+	c.mu.RUnlock()
+
+	if _, err := client.WriteSingleRegister(address, value); err != nil {
+		if !isProtocolErr(err) {
+			c.markDisconnected()
+		}
+		return fmt.Errorf("modbus: write single register at %d failed: %w", address, err)
+	}
+	return nil
+}
+
+// WriteMultipleRegisters 写多个连续保持寄存器（功能码 16）。
+// values 是原始寄存器字节（每寄存器 2 字节，按配置的字节序编码）。
+func (c *ModbusClient) WriteMultipleRegisters(address uint16, values []byte) error {
+	c.mu.RLock()
+	client := c.client
+	c.mu.RUnlock()
+
+	if len(values) == 0 || len(values)%2 != 0 {
+		return fmt.Errorf("modbus: write multiple registers at %d: invalid byte length %d", address, len(values))
+	}
+	if _, err := client.WriteMultipleRegisters(address, uint16(len(values)/2), values); err != nil {
+		if !isProtocolErr(err) {
+			c.markDisconnected()
+		}
+		return fmt.Errorf("modbus: write multiple registers at %d len %d failed: %w",
+			address, len(values)/2, err)
+	}
+	return nil
+}
+
 // IsConnected 返回当前连接状态
 func (c *ModbusClient) IsConnected() bool {
 	c.mu.RLock()

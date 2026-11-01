@@ -270,3 +270,17 @@ func TestTypesCarryDecode(t *testing.T) {
 		}
 	}
 }
+
+// TestWritableMatchesWriter 声明与实现必须一致：Writable=true 的协议，
+// 工厂返回的实例必须实现 driver.Writer。SDK 启动期也查这一条，
+// 放在这里是为了在 CI 就定位到 main.go，而不是等插件被网关拉起。
+func TestWritableMatchesWriter(t *testing.T) {
+	fs := factories()
+	for _, p := range meta().Protocols {
+		drv := fs[p.Name]()
+		_, ok := drv.(driver.Writer)
+		if p.Writable != ok {
+			t.Errorf("协议 %s: Writable=%v，但驱动实现 Writer=%v", p.Name, p.Writable, ok)
+		}
+	}
+}

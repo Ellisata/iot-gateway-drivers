@@ -39,6 +39,15 @@ type finsTransport interface {
 	Close() error
 }
 
+// finsAreaWriter 写操作的可选传输能力。单独成接口（而不是塞进 finsTransport）
+// 是为了不打断既有测试桩：写路径只在真正支持写的传输上做类型断言。
+//
+// bit < 0 表示字访问（data 为 2 字节/字），bit >= 0 表示位访问
+// （data 为 1 字节/位，0x00/0x01）。
+type finsAreaWriter interface {
+	Write(area finsArea, word uint16, bit int, data []byte) error
+}
+
 // matchConfig 返回本实例当前持有的、能直接服务 cfg 的那条传输（没有则 nil）。
 //
 // 返回传输对象而不是 bool，是为了让调用方拿到"刚才被判定可用的那一个" ——

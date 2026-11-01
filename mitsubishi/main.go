@@ -112,7 +112,10 @@ func meta() driversdk.Meta {
 			{
 				Name:        protocolTCP,
 				Description: "Mitsubishi MC 以太网（3E 帧）",
-				FormJSON:    json.RawMessage(formTCP),
+				// 支持控制下发：位设备 bool 走位单位写，字设备走字单位写，
+				// 字设备 bool 读-改-写（见 mitsubishidrv/write.go）。
+				Writable: true,
+				FormJSON: json.RawMessage(formTCP),
 				// 两项扫描能力都声明：以太网是唯一能声明 Discovery 的形态
 				//（串口被契约禁止，见下面 Serial 那一项）。
 				Discovery:      mitsubishidrv.DiscoveryTCP(),
@@ -124,7 +127,9 @@ func meta() driversdk.Meta {
 				// 保证总线上帧不被交错。TCP 为 false。
 				SerialExclusive: true,
 				Description:     "Mitsubishi MC 串口（4C 帧）",
-				FormJSON:        json.RawMessage(formSerial),
+				// 与 TCP 同一套 MC 应用层写实现（4C Format5 封帧）。
+				Writable: true,
+				FormJSON: json.RawMessage(formSerial),
 				// **只声明 PointDiscovery**，两项能力的取舍是两条不同的规矩：
 				//
 				//   - Discovery（扫网段）被 driversdk.Meta.Validate **明文禁止**

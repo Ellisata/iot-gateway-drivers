@@ -85,6 +85,7 @@ func init() {
 		Kind:   driver.KindBool,
 		Size:   1,
 		Decode: decodeBool,
+		Encode: encodeBool,
 		Format: formatBool,
 	})
 
@@ -93,6 +94,7 @@ func init() {
 		Kind:   driver.KindInt,
 		Size:   2,
 		Decode: decodeInt16,
+		Encode: encodeInt16,
 		Format: formatDefault,
 	})
 
@@ -101,6 +103,7 @@ func init() {
 		Kind:   driver.KindUInt,
 		Size:   2,
 		Decode: decodeUint16,
+		Encode: encodeUint16,
 		Format: formatDefault,
 	})
 
@@ -109,6 +112,7 @@ func init() {
 		Kind:   driver.KindUInt,
 		Size:   2,
 		Decode: decodeUint16,
+		Encode: encodeUint16,
 		Format: formatDefault,
 	})
 
@@ -117,6 +121,7 @@ func init() {
 		Kind:   driver.KindInt,
 		Size:   4,
 		Decode: decodeInt32,
+		Encode: encodeInt32,
 		Format: formatDefault,
 	})
 
@@ -125,6 +130,7 @@ func init() {
 		Kind:   driver.KindUInt,
 		Size:   4,
 		Decode: decodeUint32,
+		Encode: encodeUint32,
 		Format: formatDefault,
 	})
 
@@ -133,6 +139,7 @@ func init() {
 		Kind:   driver.KindFloat,
 		Size:   4,
 		Decode: decodeFloat32,
+		Encode: encodeFloat32,
 		Format: formatFloat,
 	})
 
@@ -141,6 +148,7 @@ func init() {
 		Kind:   driver.KindFloat,
 		Size:   8,
 		Decode: decodeFloat64,
+		Encode: encodeFloat64,
 		Format: formatFloat,
 	})
 
@@ -159,6 +167,7 @@ func init() {
 		Kind:   driver.KindUInt,
 		Size:   1,
 		Decode: decodeUint8,
+		Encode: encodeUint8,
 		Format: formatDefault,
 	})
 
@@ -167,6 +176,7 @@ func init() {
 		Kind:   driver.KindInt,
 		Size:   1,
 		Decode: decodeInt8,
+		Encode: encodeInt8,
 		Format: formatDefault,
 	})
 
@@ -175,6 +185,7 @@ func init() {
 		Kind:   driver.KindUInt,
 		Size:   2,
 		Decode: decodeBCD,
+		Encode: encodeBCD,
 		Format: formatDefault,
 	})
 
@@ -183,6 +194,7 @@ func init() {
 		Kind:   driver.KindUInt,
 		Size:   4,
 		Decode: decodeLBCD,
+		Encode: encodeLBCD,
 		Format: formatDefault,
 	})
 }
@@ -324,4 +336,215 @@ func bcdToUint64(bcd uint64, digits int) uint64 {
 		result = result*10 + digit
 	}
 	return result
+}
+
+// ==================== 编码函数 ====================
+// MC 字数据小端；写路径把 1 字节类型补成一个 16 位字（低字节放值），
+// 见 write.go 的 padMCWord。
+
+func encodeBool(val any, _ binary.ByteOrder) ([]byte, error) {
+	var v bool
+	switch x := val.(type) {
+	case bool:
+		v = x
+	case float64:
+		v = x != 0
+	case string:
+		v = x == "1" || strings.EqualFold(x, "true")
+	default:
+		return nil, fmt.Errorf("bool: unsupported value type %T", val)
+	}
+	buf := make([]byte, 1)
+	if v {
+		buf[0] = 0x01
+	}
+	return buf, nil
+}
+
+func encodeInt16(val any, bo binary.ByteOrder) ([]byte, error) {
+	v, err := toInt64(val)
+	if err != nil {
+		return nil, fmt.Errorf("int16: %w", err)
+	}
+	buf := make([]byte, 2)
+	bo.PutUint16(buf, uint16(int16(v)))
+	return buf, nil
+}
+
+func encodeUint16(val any, bo binary.ByteOrder) ([]byte, error) {
+	v, err := toUint64(val)
+	if err != nil {
+		return nil, fmt.Errorf("uint16: %w", err)
+	}
+	buf := make([]byte, 2)
+	bo.PutUint16(buf, uint16(v))
+	return buf, nil
+}
+
+func encodeInt32(val any, bo binary.ByteOrder) ([]byte, error) {
+	v, err := toInt64(val)
+	if err != nil {
+		return nil, fmt.Errorf("int32: %w", err)
+	}
+	buf := make([]byte, 4)
+	bo.PutUint32(buf, uint32(int32(v)))
+	return buf, nil
+}
+
+func encodeUint32(val any, bo binary.ByteOrder) ([]byte, error) {
+	v, err := toUint64(val)
+	if err != nil {
+		return nil, fmt.Errorf("uint32: %w", err)
+	}
+	buf := make([]byte, 4)
+	bo.PutUint32(buf, uint32(v))
+	return buf, nil
+}
+
+func encodeFloat32(val any, bo binary.ByteOrder) ([]byte, error) {
+	var v float32
+	switch x := val.(type) {
+	case float64:
+		v = float32(x)
+	case float32:
+		v = x
+	default:
+		return nil, fmt.Errorf("float32: unsupported value type %T", val)
+	}
+	buf := make([]byte, 4)
+	bo.PutUint32(buf, math.Float32bits(v))
+	return buf, nil
+}
+
+func encodeFloat64(val any, bo binary.ByteOrder) ([]byte, error) {
+	var v float64
+	switch x := val.(type) {
+	case float64:
+		v = x
+	case float32:
+		v = float64(x)
+	default:
+		return nil, fmt.Errorf("float64: unsupported value type %T", val)
+	}
+	buf := make([]byte, 8)
+	bo.PutUint64(buf, math.Float64bits(v))
+	return buf, nil
+}
+
+func encodeUint8(val any, _ binary.ByteOrder) ([]byte, error) {
+	v, err := toUint64(val)
+	if err != nil {
+		return nil, fmt.Errorf("uint8: %w", err)
+	}
+	return []byte{byte(v)}, nil
+}
+
+func encodeInt8(val any, _ binary.ByteOrder) ([]byte, error) {
+	v, err := toInt64(val)
+	if err != nil {
+		return nil, fmt.Errorf("int8: %w", err)
+	}
+	return []byte{byte(int8(v))}, nil
+}
+
+func encodeBCD(val any, bo binary.ByteOrder) ([]byte, error) {
+	v, err := toUint64(val)
+	if err != nil {
+		return nil, fmt.Errorf("bcd: %w", err)
+	}
+	if v > 9999 {
+		v = v % 10000
+	}
+	buf := make([]byte, 2)
+	bo.PutUint16(buf, uint16(uint64ToBCD(v, 4)))
+	return buf, nil
+}
+
+func encodeLBCD(val any, bo binary.ByteOrder) ([]byte, error) {
+	v, err := toUint64(val)
+	if err != nil {
+		return nil, fmt.Errorf("lbcd: %w", err)
+	}
+	if v > 99999999 {
+		v = v % 100000000
+	}
+	buf := make([]byte, 4)
+	bo.PutUint32(buf, uint32(uint64ToBCD(v, 8)))
+	return buf, nil
+}
+
+// ==================== 类型转换工具 ====================
+
+func toInt64(val any) (int64, error) {
+	switch v := val.(type) {
+	case int64:
+		return v, nil
+	case int:
+		return int64(v), nil
+	case int32:
+		return int64(v), nil
+	case int16:
+		return int64(v), nil
+	case int8:
+		return int64(v), nil
+	case uint64:
+		return int64(v), nil
+	case uint32:
+		return int64(v), nil
+	case uint16:
+		return int64(v), nil
+	case uint8:
+		return int64(v), nil
+	case float64:
+		return int64(v), nil
+	default:
+		return 0, fmt.Errorf("cannot convert %T to int64", val)
+	}
+}
+
+func toUint64(val any) (uint64, error) {
+	switch v := val.(type) {
+	case uint64:
+		return v, nil
+	case uint:
+		return uint64(v), nil
+	case uint32:
+		return uint64(v), nil
+	case uint16:
+		return uint64(v), nil
+	case uint8:
+		return uint64(v), nil
+	case int64:
+		if v < 0 {
+			return 0, fmt.Errorf("negative value %d cannot convert to uint64", v)
+		}
+		return uint64(v), nil
+	case int:
+		if v < 0 {
+			return 0, fmt.Errorf("negative value %d cannot convert to uint64", v)
+		}
+		return uint64(v), nil
+	case int32:
+		if v < 0 {
+			return 0, fmt.Errorf("negative value %d cannot convert to uint64", v)
+		}
+		return uint64(v), nil
+	case float64:
+		if v < 0 {
+			return 0, fmt.Errorf("negative value %f cannot convert to uint64", v)
+		}
+		return uint64(v), nil
+	default:
+		return 0, fmt.Errorf("cannot convert %T to uint64", val)
+	}
+}
+
+func uint64ToBCD(v uint64, digits int) uint64 {
+	var bcd uint64
+	for i := digits - 1; i >= 0; i-- {
+		digit := v % 10
+		bcd |= digit << (i * 4)
+		v /= 10
+	}
+	return bcd
 }

@@ -48,7 +48,8 @@ const (
 
 // FINS 命令码
 const (
-	cmdMemoryAreaRead = 0x0101 // 内存区读取
+	cmdMemoryAreaRead  = 0x0101 // 内存区读取
+	cmdMemoryAreaWrite = 0x0102 // 内存区写入
 	// 命令码高低字节（避免 byte(0x0101) 溢出）
 	cmdMemoryAreaReadHi = byte(cmdMemoryAreaRead >> 8)
 	cmdMemoryAreaReadLo = byte(cmdMemoryAreaRead & 0xFF)

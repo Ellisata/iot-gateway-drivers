@@ -26,6 +26,19 @@
 | `abb/` | ABB.RWS |
 | `dlt645/` | DLT645.Serial / DLT645.TCP |
 
+> **控制下发**：Modbus、S7、三菱 MC、FINS、Omron CIP、Rockwell CIP 均已实现
+> `driver.Writer` 并声明 `Writable: true`。网关侧还需打开 `control.enabled`，
+> 且点位 `rw_permission` 含 `W` 才会真正下发。可写范围：
+>
+> - Modbus：线圈（0x）与保持寄存器（4x）；
+> - S7：DB / M / Q 区（I 输入区只读），位地址采用读-改-写；
+> - 三菱 MC：位设备与字设备；字设备的 bool 点位读-改-写所在字；
+> - FINS：CIO / WR / HR / DM 区，支持位写入；
+> - Omron CIP：0x4D Write Service for Variables；
+> - Rockwell CIP：0x4D Write Tag（STRING 暂不支持）。
+>
+> OPC UA、ABB RWS、DL/T 645 目前只读。
+
 测试使用 SDK [`testkit`](https://github.com/Ellisata/iot-gateway-sdk/tree/main/testkit) 模块中的假 PLC 服务器；它们不在本仓库内。
 
 ## 构建

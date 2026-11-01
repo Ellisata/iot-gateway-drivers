@@ -83,7 +83,10 @@ func meta() driversdk.Meta {
 				// 不独占任何串行总线（该包也没有 SerialExclusive() 实现），
 				// 采集引擎因此只对单次 Read 持锁，允许同插件下多设备并发采集。
 				SerialExclusive: false,
-				FormJSON:        json.RawMessage(formS7),
+				// 支持控制下发：DB / M / Q 区可写，I 输入区只读
+				//（见 s7drv/write.go）。
+				Writable: true,
+				FormJSON: json.RawMessage(formS7),
 				// 两项扫描能力**都声明**。S7 只有 ISO-on-TCP 一种传输，
 				// 本插件里不存在串口协议，因此 driversdk.Meta.Validate 里那条
 				// 「SerialExclusive 不得声明 Discovery」的禁令在这里没有适用对象

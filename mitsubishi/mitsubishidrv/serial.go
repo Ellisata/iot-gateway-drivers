@@ -102,6 +102,33 @@ func (c *mcSerialClient) Read(device mcDevice, head uint32, points uint16, bitMo
 	return data, nil
 }
 
+// Write 通过 4C Format5 帧批量写设备数据。
+func (c *mcSerialClient) Write(device mcDevice, head uint32, points uint16, bitMode bool, data []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.port == nil || !c.connected {
+		return fmt.Errorf("mc serial: not connected")
+	}
+
+	frame := buildSerialWriteFrame(device, head, points, bitMode, data)
+	logDebug("mc serial send write raw=% X", frame)
+	if _, err := c.port.Write(frame); err != nil {
+		c.connected = false
+		return fmt.Errorf("mc serial: write failed: %w", err)
+	}
+
+	resp, err := c.readFrame()
+	if err != nil {
+		c.connected = false
+		return fmt.Errorf("mc serial: read write response failed: %w", err)
+	}
+	if _, err := parseSerialResponse(resp); err != nil {
+		return err // 结束码/和校验错误：连接是通的，不标记断连
+	}
+	return nil
+}
+
 // readFrame 读取一个完整 4C Format5 响应帧（解填充后的帧体，含和校验字节）。
 //
 // 以 DLE 状态机逐字节解析：帧头 DLE STX 起始，帧体 DLE 字节被双写（0x10 0x10 表示

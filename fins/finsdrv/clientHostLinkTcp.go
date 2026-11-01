@@ -101,6 +101,36 @@ func (c *finsHostLinkTCPClient) Read(area finsArea, word, count uint16) ([]byte,
 	return data, nil
 }
 
+// Write 通过 Host Link 帧（经串口服务器透传）写入内存区。
+func (c *finsHostLinkTCPClient) Write(area finsArea, word uint16, bit int, data []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.conn == nil || !c.connected {
+		return fmt.Errorf("fins hostlink-tcp: not connected")
+	}
+
+	c.sid++
+	sid := c.sid
+	finsBody := append(
+		[]byte{byte(cmdMemoryAreaWrite >> 8), byte(cmdMemoryAreaWrite & 0xFF)},
+		buildMemoryWriteBody(area, word, bit, data)...,
+	)
+	frame := buildSerialFrame(c.fcsMode, c.unitNo, c.dstUnit, c.srcUnit, sid, finsBody)
+	if err := c.writeAll(frame); err != nil {
+		c.connected = false
+		return fmt.Errorf("fins hostlink-tcp: write failed: %w", err)
+	}
+
+	resp, err := c.readFrame()
+	if err != nil {
+		c.connected = false
+		return fmt.Errorf("fins hostlink-tcp: read write response failed: %w", err)
+	}
+	_, err = parseSerialResponse(resp, sid, c.fcsMode)
+	return err
+}
+
 // readFrame 读取一个完整 Host Link 响应帧（读到 CR 终止符）。
 // 读超时由 SetReadDeadline 控制。
 func (c *finsHostLinkTCPClient) readFrame() ([]byte, error) {

@@ -74,6 +74,38 @@ func buildReadFrame(area finsArea, word, count uint16, dstNode, dstUnit, srcNode
 	}, dstNode, dstUnit, srcNode, srcUnit, sid)
 }
 
+// buildWriteFrame 构建内存区写入命令帧（FINS 头 + 命令体）。
+//
+//	命令体：命令码(2) | 区域码(1) | 字地址(2 BE) | 位(1) | 数量(2 BE) | 数据
+//
+// bit < 0 表示字访问：数量为字数，数据为 2 字节/字（大端）。
+// bit >= 0 表示位访问：数量为位数，数据为 1 字节/位（0x00/0x01），
+// 且所有位必须在同一个字内（本项目一次只写一个位点位）。
+func buildWriteFrame(area finsArea, word uint16, bit int, data []byte,
+	dstNode, dstUnit, srcNode, srcUnit, sid byte) []byte {
+	return buildCommandFrame(cmdMemoryAreaWrite, buildMemoryWriteBody(area, word, bit, data),
+		dstNode, dstUnit, srcNode, srcUnit, sid)
+}
+
+// buildMemoryWriteBody 构建内存区写入的命令体（不含 FINS 头与命令码）。
+// 串口 / Host Link 封帧直接复用它。
+func buildMemoryWriteBody(area finsArea, word uint16, bit int, data []byte) []byte {
+	bitPos := byte(0)
+	count := len(data) / 2
+	if bit >= 0 {
+		bitPos = byte(bit)
+		count = len(data)
+	}
+	body := make([]byte, 0, 6+len(data))
+	body = append(body,
+		byte(area),
+		byte(word>>8), byte(word),
+		bitPos,
+		byte(count>>8), byte(count),
+	)
+	return append(body, data...)
+}
+
 // parseCommandResponse 解析一条命令的响应帧，返回载荷（去除 FINS 头 + 命令回显 + 结束码）。
 //
 // 响应体：命令码回显(2) | 结束码(2 BE) | 数据。结束码非 0 时返回 finsEndCodeError

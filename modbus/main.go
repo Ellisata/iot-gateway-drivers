@@ -120,6 +120,9 @@ func meta() driversdk.Meta {
 				Name:        protocolTCP,
 				Description: "Modbus TCP",
 				FormJSON:    json.RawMessage(formTCP),
+				// 支持控制下发：只写线圈（0x）与保持寄存器（4x），
+				// 输入寄存器/离散输入仍是只读区（见 modbusdrv/write.go）。
+				Writable: true,
 				// Modbus TCP 支持局域网扫描发现。
 				// **RTU 刻意不声明**：串口协议的目标模型是 comPort 而不是 host/port，
 				// 扫描（网段内找 IP）这套根本套不上去；串口上"总线上有哪些站号"
@@ -134,8 +137,10 @@ func meta() driversdk.Meta {
 				// RTU 独占串行总线：采集引擎据此整轮持设备锁，
 				// 保证总线上帧不被交错。TCP 为 false。
 				SerialExclusive: true,
-				Description:     "Modbus RTU 串口",
-				FormJSON:        json.RawMessage(formRTU),
+				// 与 TCP 一样支持写线圈与保持寄存器。
+				Writable:    true,
+				Description: "Modbus RTU 串口",
+				FormJSON:    json.RawMessage(formRTU),
 				// **与 Discovery 的那条禁令正相反**：串口协议可以、且应当声明点位
 				// 扫描。这条不对称是刻意的 —— Discovery 的目标是"网段里的一个 IP"，
 				// 与串口无关；而点位扫描的目标是**一台已存在的设备**，串口设备同样有

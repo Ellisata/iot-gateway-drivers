@@ -3,6 +3,8 @@
 
 package cip
 
+import "strings"
+
 // protocolName CIP 协议类型注册作用域名（TypeRegistry 前缀）。
 const protocolName = "cip"
 
@@ -19,27 +21,33 @@ const (
 // CIP 服务码
 const (
 	cipServiceDataTableRead = 0x4C // Omron 专有：数据表读取（Data Table Read）
+	cipServiceVariableWrite = 0x4D // Omron：变量写入（Write Service for Variables）
 	cipServiceMultipleRead  = 0x0A // 多服务请求：一个报文内拼接多个 0x4C 读服务
 )
 
-// Omron 数据表读取专有类型码。
+// Omron 变量服务的数据类型码。
 //
-// 注意：与通用 CIP（Allen-Bradley 风格）数据类型码不同且冲突（如通用 INT=0x00C3，
-// Omron INT=0x00C3），仅适用于 Omron 的 0x4C 数据表读取服务。以下取值依据
-// HslCommunication OmronCipNet / gologix 真机验证实现，标注「待真机核实」。
+// 这些码与 CIP Common 类型码一致（W506 附录 A / Z396 §8-5 的 "Data Type Code"
+// 表）：BOOL=C1、SINT=C2、INT=C3、DINT=C4、USINT=C6、UINT=C7、UDINT=C8、
+// REAL=CA、LREAL=CB、STRING=D0、BYTE=D1、WORD=D2、DWORD=D3。
+//
+// 早期版本这里有一组错位的取值（如 SINT=D2、UINT=C8、WORD=CA），0x4C 读
+// 请求并不携带类型码，所以读路径只在**批量读响应按类型码折算长度**时受影响；
+// 写服务（0x4D）必须把类型码显式发给设备，错位的值会让设备按错误类型解析
+// 数据长度。这里按手册统一修正，读写共用同一张表。
 const (
-	cipTypeBool   = 0x00C2 // BOOL
-	cipTypeSINT   = 0x00D2 // SINT：int8
+	cipTypeBool   = 0x00C1 // BOOL
+	cipTypeSINT   = 0x00C2 // SINT：int8
 	cipTypeINT    = 0x00C3 // INT：int16
 	cipTypeDINT   = 0x00C4 // DINT：int32
-	cipTypeUSINT  = 0x00D3 // USINT：uint8
-	cipTypeUINT   = 0x00C8 // UINT：uint16
-	cipTypeUDINT  = 0x00C9 // UDINT：uint32
-	cipTypeWORD   = 0x00CA // WORD：16 位
-	cipTypeDWORD  = 0x00D1 // DWORD：32 位
-	cipTypeREAL   = 0x00C6 // REAL：float32
-	cipTypeLREAL  = 0x00CD // LREAL：float64
-	cipTypeSTRING = 0x00CE // STRING
+	cipTypeUSINT  = 0x00C6 // USINT：uint8
+	cipTypeUINT   = 0x00C7 // UINT：uint16
+	cipTypeUDINT  = 0x00C8 // UDINT：uint32
+	cipTypeREAL   = 0x00CA // REAL：float32
+	cipTypeLREAL  = 0x00CB // LREAL：float64
+	cipTypeSTRING = 0x00D0 // STRING
+	cipTypeWORD   = 0x00D2 // WORD：16 位
+	cipTypeDWORD  = 0x00D3 // DWORD：32 位
 )
 
 // cipTypeCodeByTypeName 内部类型名 → Omron 数据表类型码（构建 0x4C 请求用）。
@@ -62,7 +70,11 @@ var cipTypeCodeByTypeName = map[string]uint16{
 
 // cipTypeCode 查询内部类型名对应的 Omron 数据表类型码。
 func cipTypeCode(dataType string) (uint16, bool) {
-	code, ok := cipTypeCodeByTypeName[dataType]
+	if code, ok := cipTypeCodeByTypeName[dataType]; ok {
+		return code, true
+	}
+	// 与 cipLookup 的大小写回退保持一致：历史配置里可能存着 "INT16"。
+	code, ok := cipTypeCodeByTypeName[strings.ToLower(dataType)]
 	return code, ok
 }
 

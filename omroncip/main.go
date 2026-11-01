@@ -84,7 +84,10 @@ func meta() driversdk.Meta {
 				// 不独占任何串行总线（该包也没有 SerialExclusive() 实现），
 				// 采集引擎因此只对单次 Read 持锁，允许同插件下多设备并发采集。
 				SerialExclusive: false,
-				FormJSON:        json.RawMessage(formCIP),
+				// 支持控制下发：0x4D Write Service for Variables
+				//（见 omroncipdrv/write.go）。
+				Writable: true,
+				FormJSON: json.RawMessage(formCIP),
 				// 声明局域网设备扫描。**只声明这一项，不声明 PointDiscovery** ——
 				// 见下方 finders 位置的说明。
 				Discovery: omroncipdrv.Discovery(),

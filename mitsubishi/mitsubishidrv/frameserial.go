@@ -34,7 +34,16 @@ const maxSerialFrameLen = 4096
 
 // buildSerialFrame 构建 4C Format5 串口读请求帧。
 func buildSerialFrame(dev mcDevice, head uint32, points uint16, bitMode bool) []byte {
-	body := buildMCBody(dev, head, points, bitMode)
+	return buildSerialFrameBody(buildMCBody(dev, head, points, bitMode))
+}
+
+// buildSerialWriteFrame 构建 4C Format5 串口写请求帧。
+func buildSerialWriteFrame(dev mcDevice, head uint32, points uint16, bitMode bool, data []byte) []byte {
+	return buildSerialFrameBody(buildMCWriteBody(dev, head, points, bitMode, data))
+}
+
+// buildSerialFrameBody 给 MC 请求体套上 4C Format5 封帧（读、写共用）。
+func buildSerialFrameBody(body []byte) []byte {
 	// 帧体（待填充与校验）：网络/PC/IO/站 + 数据长度(请求体字节数)
 	// 4C Format5 二进制与 3E 一致，多字节字段均小端：I/O 号 FF 03、数据长度低字节在前。
 	inner := make([]byte, 0, 5+2+len(body))

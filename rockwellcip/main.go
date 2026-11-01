@@ -83,7 +83,9 @@ func meta() driversdk.Meta {
 				// 该包也没有实现 driver.SerialExclusive 接口。
 				Name:        protocolName,
 				Description: "Rockwell CIP (Allen-Bradley Logix / EtherNet/IP)",
-				FormJSON:    json.RawMessage(formRockwell),
+				// 支持控制下发：0x4D Write Tag（见 rockwellcipdrv/write.go）。
+				Writable: true,
+				FormJSON: json.RawMessage(formRockwell),
 				// Ethernet/IP 标准的 ListIdentity 广播发现，实现见 rockwellcipdrv/probe.go。
 				Discovery: rockwellcipdrv.Discovery(),
 				// CIP Symbol Object（类 0x6B）原生枚举，实现见 rockwellcipdrv/pointscan.go。

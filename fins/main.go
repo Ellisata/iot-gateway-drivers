@@ -210,7 +210,9 @@ func meta() driversdk.Meta {
 			{
 				Name:        protocolUDP,
 				Description: "Omron FINS/UDP（端口 9600）",
-				FormJSON:    json.RawMessage(formUDP),
+				// 支持控制下发：CIO/WR/HR/DM 区可写（见 finsdrv/write.go）。
+				Writable: true,
+				FormJSON: json.RawMessage(formUDP),
 				// 两项扫描能力都声明。串口独占的那条禁令（SerialExclusive 不得
 				// 声明 Discovery）在这里没有适用对象 —— 见下面 Serial 那一项的注释。
 				Discovery:      finsdrv.DiscoveryUDP(),
@@ -219,6 +221,7 @@ func meta() driversdk.Meta {
 			{
 				Name:        protocolTCP,
 				Description: "Omron FINS/TCP（含连接握手）",
+				Writable:    true,
 				FormJSON:    json.RawMessage(formTCP),
 				// 与 UDP 的差别只在传输层，因此两份能力声明共用同一批构造。
 				Discovery:      finsdrv.DiscoveryTCP(),
@@ -230,7 +233,9 @@ func meta() driversdk.Meta {
 				// 保证 RS-485 上的帧不被交错。其余三个为 false。
 				SerialExclusive: true,
 				Description:     "Omron Host Link 串口（FINS over serial）",
-				FormJSON:        json.RawMessage(formSerial),
+				// 写路径与读路径共用同一套 Host Link 封帧（0x0102）。
+				Writable: true,
+				FormJSON: json.RawMessage(formSerial),
 				// **两项扫描能力都不声明**，而且理由是**两条不同的**规矩：
 				//
 				//   - Discovery（扫网段）被 driversdk.Meta.Validate 明文禁止挂在
@@ -250,6 +255,7 @@ func meta() driversdk.Meta {
 				// 判据与内置实现一致：transport == TransportSerial 才独占。
 				SerialExclusive: false,
 				Description:     "Omron Host Link over TCP（经串口服务器采集远端串口）",
+				Writable:        true,
 				FormJSON:        json.RawMessage(formHostLinkTCP),
 				// Discovery 不声明：这个协议连的是**串口服务器**，扫一个网段
 				// 只会扫出一堆串口服务器，一键建出来的设备大概率指向一台

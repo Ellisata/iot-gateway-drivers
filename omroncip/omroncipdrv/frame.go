@@ -142,18 +142,61 @@ func parseMultipleReadBody(resp []byte, sizes []int) ([]TagResult, error) {
 // 数据类型码回显给出（驱动侧按点位配置的类型解码）。故 dataTypeCode 不再编入请求，
 // 参数保留以便将来对响应类型码做校验。
 func buildDataTableRead(tagName string, dataTypeCode uint16) []byte {
-	path := make([]byte, 0, 2+len(tagName)+1)
-	path = append(path, 0x91, byte(len(tagName))) // ANSI Extended Symbol 段头
-	path = append(path, []byte(tagName)...)
-	if len(path)%2 == 1 {
-		path = append(path, 0x00) // 路径须整字对齐
-	}
-
+	path := buildSymbolPath(tagName)
 	req := make([]byte, 0, 1+1+len(path)+2)
 	req = append(req, cipServiceDataTableRead, byte(len(path)/2)) // 服务码 + 路径字数(words)
 	req = append(req, path...)
 	req = append(req, 0x01, 0x00) // 元素个数 = 1（每地址一个标签，count=1）
 	return req
+}
+
+// buildSymbolPath 构建 ANSI Extended Symbol 路径（0x91 | 长度 | 标签名 | 奇数补位）。
+// 读、写两个服务共用，避免两份路径编码漂移。
+func buildSymbolPath(tagName string) []byte {
+	path := make([]byte, 0, 2+len(tagName)+1)
+	path = append(path, 0x91, byte(len(tagName)))
+	path = append(path, []byte(tagName)...)
+	if len(path)%2 == 1 {
+		path = append(path, 0x00)
+	}
+	return path
+}
+
+// ==================== Omron Write Service for Variables（服务码 0x4D） ====================
+
+// buildDataTableWrite 构建变量写入（0x4D）请求体。
+//
+// 请求格式（W506 §8-6-2 "Write Service for Variables"）：
+//
+//	服务码(1)=0x4D | 路径字数(1) | 路径 | 数据类型(1) | AddInfoLength(1)=0
+//	| 元素个数(2 LE)=1 | 数据(小端)
+//
+// 数据类型在写请求里是 **1 字节** USINT（读响应用 2 字节 LE 回显），
+// 故这里取 uint16 类型码的低字节。结构体变量才需要 AddInfo（定义 CRC）
+// 与更长的元素数据；本驱动只写基本类型，AddInfoLength 恒为 0。
+func buildDataTableWrite(tagName string, dataTypeCode uint16, data []byte) []byte {
+	path := buildSymbolPath(tagName)
+	req := make([]byte, 0, 1+1+len(path)+4+len(data))
+	req = append(req, cipServiceVariableWrite, byte(len(path)/2))
+	req = append(req, path...)
+	req = append(req, byte(dataTypeCode), 0x00) // 数据类型 + AddInfoLength
+	req = append(req, 0x01, 0x00)               // 元素个数 = 1
+	return append(req, data...)
+}
+
+// parseDataTableWrite 解析变量写入响应。写服务成功时没有响应数据，
+// 但错误响应仍带"服务回显 | 保留 | 通用状态 | 附加状态字数"。
+func parseDataTableWrite(resp []byte) error {
+	if len(resp) < 4 {
+		return fmt.Errorf("cip: short data table write response (%d bytes)", len(resp))
+	}
+	if resp[0] != cipServiceVariableWrite|0x80 {
+		return fmt.Errorf("cip: unexpected write service echo 0x%02X", resp[0])
+	}
+	if status := resp[2]; status != 0 {
+		return cipcore.NewGeneralStatusError(status)
+	}
+	return nil
 }
 
 // parseDataTableRead 解析 Data Table Read 响应体，返回数据区字节。

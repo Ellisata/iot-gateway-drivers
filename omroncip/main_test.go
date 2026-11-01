@@ -251,3 +251,16 @@ func TestEveryMappedTypeDecodable(t *testing.T) {
 		}
 	}
 }
+
+// TestWritableMatchesWriter 声明与实现必须一致：Writable=true 的协议，
+// 工厂返回的实例必须实现 driver.Writer。
+func TestWritableMatchesWriter(t *testing.T) {
+	fs := factories()
+	for _, p := range meta().Protocols {
+		drv := fs[p.Name]()
+		_, ok := drv.(driver.Writer)
+		if p.Writable != ok {
+			t.Errorf("协议 %s: Writable=%v，但驱动实现 Writer=%v", p.Name, p.Writable, ok)
+		}
+	}
+}

@@ -21,9 +21,13 @@ const (
 )
 
 // 请求子头与命令/子命令码。
+//
+// 3E 二进制帧的请求子头 0x5000 对读、写都适用，区分读写的是命令码：
+// 0401 = 批量读，1401 = 批量写。子命令 0000 = 字单位，0001 = 位单位。
 const (
-	subHeaderRead = 0x5000 // 子头：批量读
+	subHeaderRead = 0x5000 // 子头：批量访问（读 / 写）
 	cmdRead       = 0x0401 // 命令：批量读
+	cmdWrite      = 0x1401 // 命令：批量写
 	subCmdWord    = 0x0000 // 子命令：字单位
 	subCmdBit     = 0x0001 // 子命令：位单位
 )
@@ -125,6 +129,43 @@ func buildReadFrame(dev mcDevice, head uint32, points uint16, bitMode bool) []by
 	frame = append(frame, byte(reqDataLenRead&0xFF), byte(reqDataLenRead>>8)) // 请求数据长度（小端）
 	frame = append(frame, byte(monitorTimer&0xFF), byte(monitorTimer>>8))     // 监视定时器（小端）
 	frame = append(frame, buildMCBody(dev, head, points, bitMode)...)
+	return frame
+}
+
+// buildMCWriteBody 构建批量写请求体：
+//
+//	命令(2 LE)=1401 | 子命令(2 LE) | 首地址号(3 LE) | 设备码(1) | 点数(2 LE) | 数据
+//
+// 数据格式：
+//   - 字单位：每字 2 字节，小端；
+//   - 位单位：**两个点打包成一个字节，前一个点在高半字节**，
+//     点数奇数时最后一个字节的低半字节补 0（mitsubishi MC 二进制帧约定，
+//     与位读的「1 点 1 字节」不同）。
+func buildMCWriteBody(dev mcDevice, head uint32, points uint16, bitMode bool, data []byte) []byte {
+	body := make([]byte, 0, 10+len(data))
+	body = append(body, byte(cmdWrite&0xFF), byte(cmdWrite>>8))
+	if bitMode {
+		body = append(body, byte(subCmdBit&0xFF), byte(subCmdBit>>8))
+	} else {
+		body = append(body, byte(subCmdWord&0xFF), byte(subCmdWord>>8))
+	}
+	body = append(body, byte(head), byte(head>>8), byte(head>>16))
+	body = append(body, byte(dev.code))
+	body = append(body, byte(points), byte(points>>8))
+	body = append(body, data...)
+	return body
+}
+
+// buildWriteFrame 构建 3E 帧 TCP 写请求。
+func buildWriteFrame(dev mcDevice, head uint32, points uint16, bitMode bool, data []byte) []byte {
+	body := buildMCWriteBody(dev, head, points, bitMode, data)
+	reqLen := 2 + len(body) // 监视定时器(2) + 请求体
+	frame := make([]byte, 0, 9+reqLen)
+	frame = append(frame, byte((subHeaderRead>>8)&0xFF), byte(subHeaderRead&0xFF))
+	frame = append(frame, mcNetNo, mcPCNo, mcIONoLo, mcIONoHi, mcStation)
+	frame = append(frame, byte(reqLen&0xFF), byte(reqLen>>8))
+	frame = append(frame, byte(monitorTimer&0xFF), byte(monitorTimer>>8))
+	frame = append(frame, body...)
 	return frame
 }
 

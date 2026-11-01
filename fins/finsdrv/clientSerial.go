@@ -121,6 +121,38 @@ func (c *finsSerialClient) Read(area finsArea, word, count uint16) ([]byte, erro
 	return data, nil
 }
 
+// Write 通过 Host Link 帧写入内存区。
+func (c *finsSerialClient) Write(area finsArea, word uint16, bit int, data []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.port == nil || !c.connected {
+		return fmt.Errorf("fins serial: not connected")
+	}
+
+	c.sid++
+	sid := c.sid
+	finsBody := append(
+		[]byte{byte(cmdMemoryAreaWrite >> 8), byte(cmdMemoryAreaWrite & 0xFF)},
+		buildMemoryWriteBody(area, word, bit, data)...,
+	)
+	frame := buildSerialFrame(c.fcsMode, c.unitNo, c.dstUnit, c.srcUnit, sid, finsBody)
+
+	logDebug("serial send write raw=%q", string(frame))
+	if _, err := c.port.Write(frame); err != nil {
+		c.connected = false
+		return fmt.Errorf("fins serial: write failed: %w", err)
+	}
+
+	resp, err := c.readFrame()
+	if err != nil {
+		c.connected = false
+		return fmt.Errorf("fins serial: read write response failed: %w", err)
+	}
+	_, err = parseSerialResponse(resp, sid, c.fcsMode)
+	return err
+}
+
 // readFrame 读取一个完整 Host Link 响应帧（读到 CR 终止符）。
 // 串口读超时由 serial.Config.Timeout 控制（返回 serial.ErrTimeout）。
 func (c *finsSerialClient) readFrame() ([]byte, error) {

@@ -34,6 +34,15 @@ type rockwellTransport interface {
 	Close() error
 }
 
+// rockwellTagWriter 写操作的可选传输能力。单独成接口（而不是塞进
+// rockwellTransport）是为了不打断既有测试桩。
+//
+// value 必须是 goindustrial 能映射到 CIP 类型码的基本 Go 类型
+// （bool/int8/int16/int32/int64/float32/float64）；类型码由库按 Go 类型推断。
+type rockwellTagWriter interface {
+	WriteTag(tagName string, value any) error
+}
+
 // goindustrialClient 基于 github.com/iceisfun/goindustrial EtherNet/IP 客户端的适配器。
 //
 // 连接生命周期：TCP 连接（44818）→ Register Session（0x0065）→ 每次读取
@@ -162,6 +171,31 @@ func (c *goindustrialClient) ReadTagElements(tagName string, count uint16) ([]by
 		return nil, err
 	}
 	return data, nil
+}
+
+// WriteTag 写入单个标签（0x4D Write Tag）。
+//
+// 错误语义与 ReadTag 一致：CIP 状态错误（设备响应但拒绝）连接仍通，不置
+// connected=false；网络/超时/封装层错误视为连接失效，交由 collector 重连。
+func (c *goindustrialClient) WriteTag(tagName string, value any) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.client == nil || !c.connected.Load() {
+		return fmt.Errorf("rockwell: not connected")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	if err := c.client.WriteTag(ctx, tagName, value); err != nil {
+		err = c.wrapReadError(err)
+		if !isCIPStatusError(err) {
+			c.connected.Store(false)
+		}
+		return err
+	}
+	return nil
 }
 
 // ListTags 枚举控制器上的全部标签（CIP Symbol Object，类 0x6B）。

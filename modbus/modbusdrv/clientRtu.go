@@ -161,6 +161,57 @@ func (c *ModbusRTUClient) ReadDiscreteInputs(address, quantity uint16) ([]byte, 
 	return results, nil
 }
 
+// WriteSingleCoil 写单个线圈（功能码 05）。
+// 串口是独占的，收发全程持写锁，避免与采集轮询在总线上交错。
+func (c *ModbusRTUClient) WriteSingleCoil(address uint16, value bool) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	var raw uint16
+	if value {
+		raw = 0xFF00
+	}
+	if _, err := c.client.WriteSingleCoil(address, raw); err != nil {
+		if !isProtocolErr(err) {
+			c.connected = false
+		}
+		return fmt.Errorf("modbus rtu: write single coil at %d failed: %w", address, err)
+	}
+	return nil
+}
+
+// WriteSingleRegister 写单个保持寄存器（功能码 06）。
+func (c *ModbusRTUClient) WriteSingleRegister(address, value uint16) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, err := c.client.WriteSingleRegister(address, value); err != nil {
+		if !isProtocolErr(err) {
+			c.connected = false
+		}
+		return fmt.Errorf("modbus rtu: write single register at %d failed: %w", address, err)
+	}
+	return nil
+}
+
+// WriteMultipleRegisters 写多个连续保持寄存器（功能码 16）。
+func (c *ModbusRTUClient) WriteMultipleRegisters(address uint16, values []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if len(values) == 0 || len(values)%2 != 0 {
+		return fmt.Errorf("modbus rtu: write multiple registers at %d: invalid byte length %d", address, len(values))
+	}
+	if _, err := c.client.WriteMultipleRegisters(address, uint16(len(values)/2), values); err != nil {
+		if !isProtocolErr(err) {
+			c.connected = false
+		}
+		return fmt.Errorf("modbus rtu: write multiple registers at %d len %d failed: %w",
+			address, len(values)/2, err)
+	}
+	return nil
+}
+
 // Ping 通过当前已建立的串口连接发送一次读取请求验证设备可达。
 // 与常规读取不同，失败时不会将连接标记为断开，避免对采集引擎的既有状态产生副作用。
 func (c *ModbusRTUClient) Ping() error {

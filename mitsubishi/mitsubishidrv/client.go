@@ -26,6 +26,15 @@ type mcTransport interface {
 	Close() error
 }
 
+// mcWriter 写操作的可选传输能力。单独成接口（而不是塞进 mcTransport）是为了
+// 不打断既有测试桩：写路径只在真正支持写的传输上做类型断言。
+//
+// data 为已编码好的线上数据（字模式：小端字序列；位模式：nibble 打包，
+// 见 buildMCWriteBody）。
+type mcWriter interface {
+	Write(device mcDevice, head uint32, points uint16, bitMode bool, data []byte) error
+}
+
 // newTransport 按配置的传输方式创建对应传输层实例。
 func newTransport(cfg *MCConfig) (mcTransport, error) {
 	switch cfg.Transport {
@@ -127,6 +136,54 @@ func (c *mcTCPClient) Read(device mcDevice, head uint32, points uint16, bitMode 
 		return nil, fmt.Errorf("mc tcp: read data failed: %w", err)
 	}
 	return data, nil
+}
+
+// Write 通过 3E 帧批量写设备数据。
+func (c *mcTCPClient) Write(device mcDevice, head uint32, points uint16, bitMode bool, data []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.conn == nil || !c.connected {
+		return fmt.Errorf("mc tcp: not connected")
+	}
+
+	if err := c.writeAll(buildWriteFrame(device, head, points, bitMode, data)); err != nil {
+		c.connected = false
+		return fmt.Errorf("mc tcp: write failed: %w", err)
+	}
+
+	if err := c.conn.SetReadDeadline(time.Now().Add(c.timeout)); err != nil {
+		return err
+	}
+	hdr := make([]byte, 11)
+	if _, err := io.ReadFull(c.conn, hdr); err != nil {
+		c.connected = false
+		return fmt.Errorf("mc tcp: read write response header failed: %w", err)
+	}
+	dataLen := tcpResponseDataLen(hdr)
+	if dataLen < 2 {
+		c.connected = false
+		return fmt.Errorf("mc tcp: invalid response data length %d", dataLen)
+	}
+	if _, err := parseTCPEndCode(hdr); err != nil {
+		// 与 Read 同样的原因：结束码错误应答仍可能带数据段，必须读干净，
+		// 否则连接上后续请求全部错位。
+		if dataLen > 2 {
+			if _, derr := io.CopyN(io.Discard, c.conn, int64(dataLen-2)); derr != nil {
+				c.connected = false
+			}
+		}
+		return err
+	}
+	// 写应答没有数据（dataLen==2）；多出来的字节只可能是设备方言附带的
+	// 回显/诊断信息，读掉以保持帧边界。
+	if dataLen > 2 {
+		if _, err := io.CopyN(io.Discard, c.conn, int64(dataLen-2)); err != nil {
+			c.connected = false
+			return fmt.Errorf("mc tcp: drain write response failed: %w", err)
+		}
+	}
+	return nil
 }
 
 // writeAll 写入全部字节

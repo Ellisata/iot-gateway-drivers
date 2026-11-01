@@ -107,6 +107,16 @@ func (c *finsTCPClient) Read(area finsArea, word, count uint16) ([]byte, error) 
 		fmt.Sprintf("area=0x%02X word=%d count=%d", area, word, count))
 }
 
+// Write 通过内存区写入命令（0x0102）写入字/位数据。
+func (c *finsTCPClient) Write(area finsArea, word uint16, bit int, data []byte) error {
+	_, err := c.exchange(cmdMemoryAreaWrite,
+		func(sid byte) []byte {
+			return buildWriteFrame(area, word, bit, data, c.dstNode, c.dstUnit, c.srcNode, c.srcUnit, sid)
+		},
+		fmt.Sprintf("write area=0x%02X word=%d bit=%d bytes=%d", area, word, bit, len(data)))
+	return err
+}
+
 // Command 发送一条任意 FINS 命令，body 为命令体（不含 10 字节 FINS 头与命令码）。
 //
 // 只被扫描页的控制器数据读取用（见 probe.go）。

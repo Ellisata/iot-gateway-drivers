@@ -99,6 +99,33 @@ func (c *S7Client) readRange(r S7Range, buf []byte) error {
 	}
 }
 
+// writeRange 写入一个区段。字节偏移与长度限制与 readRange 相同。
+//
+// 输入区（I）是 PLC 的输入映像，只读；这里显式拒绝，避免上层误以为能写。
+func (c *S7Client) writeRange(area s7Area, db, start int, data []byte) error {
+	size := len(data)
+	if size <= 0 {
+		return fmt.Errorf("s7: invalid write size %d", size)
+	}
+	if start < 0 || start+size-1 > maxS7ByteAddr {
+		return fmt.Errorf("s7: write offset %d..%d exceeds 24-bit address limit %d",
+			start, start+size-1, maxS7ByteAddr)
+	}
+
+	switch area {
+	case S7AreaDB:
+		return c.client.AGWriteDB(db, start, size, data)
+	case S7AreaM:
+		return c.client.AGWriteMB(start, size, data)
+	case S7AreaQ:
+		return c.client.AGWriteAB(start, size, data)
+	case S7AreaI:
+		return fmt.Errorf("s7: input area (I) is read-only")
+	default:
+		return fmt.Errorf("s7: unsupported area 0x%02X", area)
+	}
+}
+
 // Close 关闭连接
 func (c *S7Client) Close() error {
 	if c == nil || c.handler == nil {

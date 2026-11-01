@@ -32,6 +32,21 @@ remain AGPL-3.0.
 | `abb/` | ABB.RWS |
 | `dlt645/` | DLT645.Serial / DLT645.TCP |
 
+> **Control writes**: Modbus, S7, Mitsubishi MC, FINS, Omron CIP and Rockwell CIP
+> implement `driver.Writer` and declare `Writable: true`. The gateway must also
+> enable `control.enabled`, and the point must have `W` in `rw_permission`.
+> Writable areas:
+>
+> - Modbus: coils (0x) and holding registers (4x);
+> - S7: DB / M / Q (the I input area is read-only); bit addresses use read-modify-write;
+> - Mitsubishi MC: bit and word devices; bool points on word devices read-modify-write
+>   the containing word;
+> - FINS: CIO / WR / HR / DM, including bit writes;
+> - Omron CIP: 0x4D Write Service for Variables;
+> - Rockwell CIP: 0x4D Write Tag (STRING is not supported yet).
+>
+> OPC UA, ABB RWS and DL/T 645 remain read-only.
+
 Tests use the fake PLC servers from the SDK's
 [`testkit`](https://github.com/Ellisata/iot-gateway-sdk/tree/main/testkit)
 module; they are not part of this repository.

@@ -30,6 +30,12 @@ type cipTransport interface {
 	Close() error
 }
 
+// cipTagWriter 写操作的可选传输能力。单独成接口（而不是塞进 cipTransport）
+// 是为了不打断既有测试桩。data 为按类型码编码好的小端数据。
+type cipTagWriter interface {
+	WriteTag(tagName string, dataTypeCode uint16, data []byte) error
+}
+
 // cipClient EtherNet/IP 显式报文客户端（UCMM 无连接方式）。
 //
 // 连接生命周期：TCP 连接（44818）→ Register Session（0x0065，取会话句柄）
@@ -151,6 +157,47 @@ func (c *cipClient) readTagLocked(tagName string, dataTypeCode uint16) ([]byte, 
 
 	// 通用状态错误（设备响应但拒绝）不置 connected=false —— 连接是通的
 	return parseDataTableRead(cipResp)
+}
+
+// WriteTag 通过 SendRRData 写入单个变量（0x4D Write Service for Variables）。
+func (c *cipClient) WriteTag(tagName string, dataTypeCode uint16, data []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.conn == nil || !c.connected {
+		return fmt.Errorf("cip: not connected")
+	}
+
+	frame := cipcore.BuildSendRRData(c.session, buildDataTableWrite(tagName, dataTypeCode, data))
+	if err := c.writeAll(frame); err != nil {
+		c.connected = false
+		return fmt.Errorf("cip: write failed: %w", err)
+	}
+
+	resp, err := c.readFrame()
+	if err != nil {
+		c.connected = false
+		return fmt.Errorf("cip: write response failed: %w", err)
+	}
+	cmd, _, status, payload, err := cipcore.ParseEncapResponse(resp)
+	if err != nil {
+		c.connected = false
+		return err
+	}
+	if status != 0 {
+		c.connected = false
+		return fmt.Errorf("cip: encap status 0x%08X", status)
+	}
+	if cmd != cipcore.CmdSendRRData {
+		c.connected = false
+		return fmt.Errorf("cip: unexpected write response command 0x%04X", cmd)
+	}
+	cipResp, err := cipcore.ParseSendRRData(payload)
+	if err != nil {
+		return err
+	}
+	// 通用状态错误不置 connected=false —— 设备响应了，只是拒绝了这次写入。
+	return parseDataTableWrite(cipResp)
 }
 
 // ReadTags 通过一个 0x0A 多服务报文批量读取多个标签。
