@@ -6,6 +6,38 @@ All notable changes to the official iot-gateway drivers are documented here.
 Chinese entries come first under each release, followed by English entries.
 This repository is versioned independently from the gateway and the SDK.
 
+## [0.4.0] - 2026-11-05
+
+### 新增
+
+- 全部声明扫描能力的协议补上 `Discovery.Transport`：Modbus TCP、S7、FINS/TCP、
+  OPC UA、三菱 MC 声明 `tcp`；FINS/UDP、Omron CIP、Rockwell CIP 声明 `udp`。
+  网关据此对 TCP 协议的单播目标先做一次短超时的 TCP 可达性预筛，大网段扫描
+  从小时级降到分钟级。广播目标永远绕过预筛，CIP 的 ListIdentity 不受影响。
+- 依赖 SDK `v0.4.0`（`driver.ProbeTransport` 随该版本引入）。
+
+### 兼容性
+
+- 线协议 `APIVersion` **保持 4**，本版本只新增可选的 describe 字段；旧网关忽略它，
+  扫描行为不变。`Transport` 是**承诺**：声明 `tcp` 而实际探 UDP 会让预筛误判死。
+
+### Added
+
+- Every scan-capable protocol now declares `Discovery.Transport`: Modbus TCP,
+  S7, FINS/TCP, OPC UA and Mitsubishi MC declare `tcp`; FINS/UDP, Omron CIP and
+  Rockwell CIP declare `udp`. The gateway uses it to run a short-timeout TCP
+  reachability prefilter for unicast targets of TCP protocols, cutting
+  large-subnet scans from hours to minutes. Broadcast targets always bypass the
+  prefilter, so CIP ListIdentity is unaffected.
+- Requires SDK `v0.4.0` (which introduces `driver.ProbeTransport`).
+
+### Compatibility
+
+- Wire `APIVersion` **stays 4**; this release only adds an optional describe
+  field. Old gateways ignore it and scanning behaves as before. `Transport` is a
+  **promise**: declaring `tcp` for a probe that actually uses UDP makes the
+  prefilter reject every target.
+
 ## [0.3.0] - 2026-10-31
 
 ### 新增

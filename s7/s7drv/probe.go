@@ -113,6 +113,8 @@ func Discovery() *driver.DiscoverySpec {
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,
+		// ISO-on-TCP 的第一步是 TCP 拨号（gos7 内部），可先做 TCP 预筛。
+		Transport: driver.ProbeTransportTCP,
 		// 8s：够「一个候选跑满 5 个握手阶段（5×1500ms）」或「若干候选先后失败」。
 		// 网关侧的 probe RPC 超时 = 本值 + 固定余量（pluginhost 的 probeRPCGrace）。
 		MaxBudgetMs: 8000,

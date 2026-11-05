@@ -161,6 +161,10 @@ func TestDiscoverySpecUsesBothTargetModes(t *testing.T) {
 	if d.TargetMode != driver.TargetModeBoth {
 		t.Errorf("TargetMode = %q，期望 %q", d.TargetMode, driver.TargetModeBoth)
 	}
+	if d.Transport != driver.ProbeTransportUDP {
+		t.Errorf("Transport = %q，期望 %q —— ListIdentity 走 UDP；填 tcp 会让网关的 TCP 预筛把所有设备判死",
+			d.Transport, driver.ProbeTransportUDP)
+	}
 	if d.Title == "" {
 		t.Error("扫描声明缺少 Title")
 	}

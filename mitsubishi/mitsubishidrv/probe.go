@@ -96,6 +96,8 @@ func DiscoveryTCP() *driver.DiscoverySpec {
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,
+		// probe 的第一步就是 TCP 拨号，网关可先做短超时的 TCP 预筛。
+		Transport: driver.ProbeTransportTCP,
 		// 8s：够一次拨号加一次读取在最坏情况下跑满默认超时。
 		// 网关侧的 probe RPC 超时 = 本值 + 固定余量（pluginhost 的 probeRPCGrace）。
 		MaxBudgetMs: 8000,

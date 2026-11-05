@@ -121,6 +121,9 @@ func Discovery() *driver.DiscoverySpec {
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultPort,
 		TargetMode:  driver.TargetModeBoth,
+		// ListIdentity 走 UDP（广播与逐主机都是），填 tcp 会让网关的 TCP 预筛
+		// 把所有 UDP 设备静默判死。广播目标本身也会绕过预筛。
+		Transport: driver.ProbeTransportUDP,
 		// 5s：广播那一轮最多花「等第一个应答 1.5s + 安静窗口 0.5s」，
 		// 逐主机那一轮每个目标最多 1.5s（由网关侧的并发度决定总时长）。
 		// 网关侧的 probe RPC 超时 = 本值 + 固定余量（pluginhost 的 probeRPCGrace）。

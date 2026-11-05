@@ -106,6 +106,10 @@ func TestDiscoverySpecUsesBothTargetModes(t *testing.T) {
 		t.Errorf("目标模式 = %q，期望 %q —— ListIdentity 是广播型协议，"+
 			"但只靠广播在禁它的网络上会一台都扫不到", d.TargetMode, driver.TargetModeBoth)
 	}
+	if d.Transport != driver.ProbeTransportUDP {
+		t.Errorf("Transport = %q，期望 %q —— ListIdentity 走 UDP；填 tcp 会让网关的 TCP 预筛把所有设备判死",
+			d.Transport, driver.ProbeTransportUDP)
+	}
 	if len(d.FormJSON) == 0 || !json.Valid(d.FormJSON) {
 		t.Error("扫描表单缺失或不是合法 JSON —— 没有它前端会渲染出一个空表单")
 	}

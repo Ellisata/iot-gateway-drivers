@@ -105,6 +105,8 @@ func DiscoveryUDP() *driver.DiscoverySpec {
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,
+		// UDP 无连接、没有 TCP 拨号前置条件，网关不得做 TCP 预筛。
+		Transport: driver.ProbeTransportUDP,
 		// 8s：够「一个候选跑满默认 1.5s 超时」或「若干个候选先后失败」。
 		// 网关侧的 probe RPC 超时 = 本值 + 固定余量（pluginhost 的 probeRPCGrace）。
 		MaxBudgetMs: 8000,
@@ -131,6 +133,8 @@ func DiscoveryTCP() *driver.DiscoverySpec {
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,
+		// 第一步就是 TCP 拨号，网关可先做短超时的 TCP 预筛。
+		Transport:   driver.ProbeTransportTCP,
 		MaxBudgetMs: 8000,
 	}
 }

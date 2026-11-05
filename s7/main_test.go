@@ -110,6 +110,10 @@ func TestDiscoverySpecPassesValidation(t *testing.T) {
 		t.Errorf("目标模式 = %q，期望 %q —— S7 没有广播型探测手段",
 			d.TargetMode, driver.TargetModeUnicast)
 	}
+	if d.Transport != driver.ProbeTransportTCP {
+		t.Errorf("Transport = %q，期望 %q —— ISO-on-TCP 的第一步就是 TCP 拨号",
+			d.Transport, driver.ProbeTransportTCP)
+	}
 	if len(d.FormJSON) == 0 {
 		t.Error("必须给扫描表单：没有它前端会渲染出一个空表单，" +
 			"用户无从配置机架/槽位（S7 最常见的一条扫不到的原因）")

@@ -115,6 +115,8 @@ func Discovery() *driver.DiscoverySpec {
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,
+		// gopcua 在 GetEndpoints 之前必须先完成 TCP 拨号，可先做 TCP 预筛。
+		Transport: driver.ProbeTransportTCP,
 		// 8s：够一次拨号、一次 SecureChannel 握手加一次 GetEndpoints 在最坏
 		// 情况下跑满默认超时。网关侧的 probe RPC 超时 = 本值 + 固定余量
 		//（pluginhost 的 probeRPCGrace）。

@@ -136,8 +136,16 @@ func TestDiscoverySpecsAreUnicast(t *testing.T) {
 		protocolUDP: finsdrv.DiscoveryUDP(),
 		protocolTCP: finsdrv.DiscoveryTCP(),
 	} {
+		wantTransport := driver.ProbeTransportUDP
+		if name == protocolTCP {
+			wantTransport = driver.ProbeTransportTCP
+		}
 		if spec.DefaultPort != 9600 {
 			t.Errorf("协议 %q 的默认端口 = %d，期望 9600", name, spec.DefaultPort)
+		}
+		if spec.Transport != wantTransport {
+			t.Errorf("协议 %q 的 Transport = %q，期望 %q —— 填错会让网关的 TCP 预筛误杀该传输上的设备",
+				name, spec.Transport, wantTransport)
 		}
 		if spec.TargetMode != driver.TargetModeUnicast {
 			t.Errorf("协议 %q 的目标模式 = %q，期望 %q",

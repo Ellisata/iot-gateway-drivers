@@ -119,6 +119,8 @@ func Discovery() *driver.DiscoverySpec {
 		FormJSON:    json.RawMessage(scanForm),
 		DefaultPort: defaultScanPort,
 		TargetMode:  driver.TargetModeUnicast,
+		// probe 的第一步就是 TCP 拨号，网关可先做短超时的 TCP 预筛。
+		Transport: driver.ProbeTransportTCP,
 		// 6s：够一次拨号(1.5s) + 设备标识(1s) + 兜底寄存器读(1s) + 少量站号，
 		// 同时保证一个 /24 网段即便全不可达也只在可接受的时间内跑完。
 		MaxBudgetMs: 6000,

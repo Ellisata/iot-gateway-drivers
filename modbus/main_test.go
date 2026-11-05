@@ -286,6 +286,10 @@ func TestDiscoverySpecPassesValidation(t *testing.T) {
 	if d.DefaultPort != 502 {
 		t.Errorf("默认端口 = %d，期望 502", d.DefaultPort)
 	}
+	if d.Transport != driver.ProbeTransportTCP {
+		t.Errorf("Transport = %q，期望 %q —— probe 的第一步就是 TCP 拨号，声明错误会让网关失去预筛机会",
+			d.Transport, driver.ProbeTransportTCP)
+	}
 	if len(d.FormJSON) == 0 {
 		t.Error("必须给扫描表单：没有它前端会渲染出一个空表单，用户无从配置站号与超时")
 	}

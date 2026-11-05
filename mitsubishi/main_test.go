@@ -193,6 +193,10 @@ func TestDiscoverySpecIsUnicast(t *testing.T) {
 		t.Errorf("目标模式 = %q，期望 %q —— 本插件没有 UDP 传输，"+
 			"广播目标只会变成朝子网广播地址连 TCP", spec.TargetMode, driver.TargetModeUnicast)
 	}
+	if spec.Transport != driver.ProbeTransportTCP {
+		t.Errorf("Transport = %q，期望 %q —— probe 的第一步就是 TCP 拨号",
+			spec.Transport, driver.ProbeTransportTCP)
+	}
 	if spec.Title == "" {
 		t.Error("扫描声明缺少 Title")
 	}

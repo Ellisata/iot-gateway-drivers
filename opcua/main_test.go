@@ -208,6 +208,10 @@ func TestScanSpecsMatchFieldReality(t *testing.T) {
 		t.Errorf("目标模式 = %q，期望 %q —— 本插件没有 UDP/组播传输，"+
 			"广播目标只会变成朝子网广播地址连 TCP", d.TargetMode, driver.TargetModeUnicast)
 	}
+	if d.Transport != driver.ProbeTransportTCP {
+		t.Errorf("Transport = %q，期望 %q —— gopcua 在 GetEndpoints 之前必须先完成 TCP 拨号",
+			d.Transport, driver.ProbeTransportTCP)
+	}
 	if d.Title == "" || d.Description == "" {
 		t.Error("扫描声明缺少 Title 或 Description —— 它是用户理解判据的唯一来源")
 	}
