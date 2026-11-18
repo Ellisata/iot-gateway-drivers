@@ -6,7 +6,7 @@ All notable changes to the official iot-gateway drivers are documented here.
 Chinese entries come first under each release, followed by English entries.
 This repository is versioned independently from the gateway and the SDK.
 
-## [Unreleased]
+## [0.4.1] - 2026-11-18
 
 ### 新增
 
