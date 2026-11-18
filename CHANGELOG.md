@@ -6,6 +6,48 @@ All notable changes to the official iot-gateway drivers are documented here.
 Chinese entries come first under each release, followed by English entries.
 This repository is versioned independently from the gateway and the SDK.
 
+## [Unreleased]
+
+### 新增
+
+- 新增 FANUC 机器人 EtherNet/IP（CIP 显式消息）驱动 `fanuc/`，协议名
+  `FANUC.CIP`：支持 R-30iA / R-30iB / R-30iB Plus 的数值寄存器 R[]，
+  整型走对象 0x6B、实型走 0x6C，读/写均支持。连接前用 ListIdentity 校验
+  厂商号 591；地址级、通信级、解码级失败按点位降级，不拖垮整台设备；
+  请求默认限流 10 次/秒，单轮预算 45s。
+- 数值寄存器 R[] 增加块读（`Get_Attribute_All`，服务 0x01）：同一 class 下
+  连续（间隙 ≤16）的点位合并成一次请求，单块默认 100 个、上限 124 个，
+  设为 1 即关闭。首次块读用单点读交叉校验；设备拒绝、响应长度不符或数据
+  错位时当场退回单读，并暂停该 class 的块读 5 分钟。相邻 100 点的帧数从
+  100 降到 1。
+- P0 范围**不含**位置寄存器 PR/CURPOS、DI/DO/GI/GO、字符串寄存器 SR 与
+  设备/点位扫描。这些对象的载荷布局与 Assembly 实例需要真机核对后再开放。
+- 线协议 `APIVersion` 保持 4；新增驱动只依赖既有接口，旧网关无需升级，
+  插件需按当前 SDK（v0.4.0）重新编译。
+
+### Added
+
+- New FANUC robot EtherNet/IP (CIP explicit messaging) driver under `fanuc/`,
+  protocol `FANUC.CIP`: reads and writes numeric registers R[] on R-30iA /
+  R-30iB / R-30iB Plus, using object 0x6B for integers and 0x6C for reals.
+  The driver verifies vendor ID 591 via ListIdentity before connecting and
+  degrades address-, comms- and decode-level failures per point instead of
+  failing the whole device. Requests are rate-limited to 10/s by default with
+  a 45s read budget.
+- Block reads for numeric registers R[] (`Get_Attribute_All`, service 0x01):
+  contiguous points of the same class (gap ≤16) are merged into one request,
+  100 registers per block by default (max 124; set 1 to disable). The first
+  block read is cross-checked with single reads; on rejection, wrong length or
+  shifted data the driver falls back to single reads immediately and pauses
+  block reads for that class for 5 minutes. 100 adjacent points go from 100
+  frames to 1.
+- Out of P0 scope: position registers (PR/CURPOS), DI/DO/GI/GO, string
+  registers (SR) and device/point discovery. Their payload layouts and
+  Assembly instances need on-hardware verification first.
+- Wire `APIVersion` stays 4; the new driver only uses existing interfaces, so
+  no gateway upgrade is required. Rebuild plugins with the current SDK
+  (v0.4.0).
+
 ## [0.4.0] - 2026-11-05
 
 ### 新增

@@ -28,14 +28,15 @@ remain AGPL-3.0.
 | `fins/` | Omron.FINS.UDP / .TCP / .Serial / .HostLinkTCP |
 | `omroncip/` | Omron.CIP |
 | `rockwellcip/` | Rockwell.CIP |
+| `fanuc/` | FANUC.CIP |
 | `opcua/` | OPC.UA |
 | `abb/` | ABB.RWS |
 | `dlt645/` | DLT645.Serial / DLT645.TCP |
 
-> **Control writes**: Modbus, S7, Mitsubishi MC, FINS, Omron CIP and Rockwell CIP
-> implement `driver.Writer` and declare `Writable: true`. The gateway must also
-> enable `control.enabled`, and the point must have `W` in `rw_permission`.
-> Writable areas:
+> **Control writes**: Modbus, S7, Mitsubishi MC, FINS, Omron CIP, Rockwell CIP and
+> FANUC CIP implement `driver.Writer` and declare `Writable: true`. The gateway
+> must also enable `control.enabled`, and the point must have `W` in
+> `rw_permission`. Writable areas:
 >
 > - Modbus: coils (0x) and holding registers (4x);
 > - S7: DB / M / Q (the I input area is read-only); bit addresses use read-modify-write;
@@ -43,7 +44,14 @@ remain AGPL-3.0.
 >   the containing word;
 > - FINS: CIO / WR / HR / DM, including bit writes;
 > - Omron CIP: 0x4D Write Service for Variables;
-> - Rockwell CIP: 0x4D Write Tag (STRING is not supported yet).
+> - Rockwell CIP: 0x4D Write Tag (STRING is not supported yet);
+> - FANUC CIP: numeric registers R[] (integer 0x6B / real 0x6C). Position registers
+>   (PR/CURPOS), I/O and string registers are not supported yet.
+>
+> FANUC CIP supports block reads of numeric registers (`Get_Attribute_All`):
+> 100 registers per request by default, max 124; set 1 to disable. The first
+> block read is cross-checked with single reads; on rejection or shifted data
+> the driver falls back to single reads and pauses block reads for 5 minutes.
 >
 > OPC UA, ABB RWS and DL/T 645 remain read-only.
 

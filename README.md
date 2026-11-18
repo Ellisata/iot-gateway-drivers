@@ -22,20 +22,27 @@
 | `fins/` | Omron.FINS.UDP / .TCP / .Serial / .HostLinkTCP |
 | `omroncip/` | Omron.CIP |
 | `rockwellcip/` | Rockwell.CIP |
+| `fanuc/` | FANUC.CIP |
 | `opcua/` | OPC.UA |
 | `abb/` | ABB.RWS |
 | `dlt645/` | DLT645.Serial / DLT645.TCP |
 
-> **控制下发**：Modbus、S7、三菱 MC、FINS、Omron CIP、Rockwell CIP 均已实现
-> `driver.Writer` 并声明 `Writable: true`。网关侧还需打开 `control.enabled`，
-> 且点位 `rw_permission` 含 `W` 才会真正下发。可写范围：
+> **控制下发**：Modbus、S7、三菱 MC、FINS、Omron CIP、Rockwell CIP、FANUC CIP
+> 均已实现 `driver.Writer` 并声明 `Writable: true`。网关侧还需打开
+> `control.enabled`，且点位 `rw_permission` 含 `W` 才会真正下发。可写范围：
 >
 > - Modbus：线圈（0x）与保持寄存器（4x）；
 > - S7：DB / M / Q 区（I 输入区只读），位地址采用读-改-写；
 > - 三菱 MC：位设备与字设备；字设备的 bool 点位读-改-写所在字；
 > - FINS：CIO / WR / HR / DM 区，支持位写入；
 > - Omron CIP：0x4D Write Service for Variables；
-> - Rockwell CIP：0x4D Write Tag（STRING 暂不支持）。
+> - Rockwell CIP：0x4D Write Tag（STRING 暂不支持）；
+> - FANUC CIP：数值寄存器 R[]（整型 0x6B / 实型 0x6C）。位置寄存器
+>   PR/CURPOS、I/O 与字符串寄存器尚不支持。
+>
+> FANUC CIP 的数值寄存器支持块读（`Get_Attribute_All`）：默认 100 个/请求、
+> 上限 124；设为 1 关闭。首次块读会用单点读交叉校验，设备拒绝或数据错位时
+> 自动退回单读并暂停块读 5 分钟。
 >
 > OPC UA、ABB RWS、DL/T 645 目前只读。
 
