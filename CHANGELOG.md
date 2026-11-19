@@ -6,55 +6,7 @@ All notable changes to the official iot-gateway drivers are documented here.
 Chinese entries come first under each release, followed by English entries.
 This repository is versioned independently from the gateway and the SDK.
 
-## [Unreleased]
-
-### 新增
-
-- OPC.UA 新增控制下发：实现 `driver.Writer` 并声明 `Writable: true`，
-  经 OPC UA Write 服务写 Variable 的 Value 属性。值按点位内部类型编码为
-  对应的 Variant（bool / 整型 / 浮点 / string / byteString(hex) / datetime）；
-  节点只读或当前用户无权限返回 `WriteCodeNotWritable`，类型或范围错误返回
-  `WriteCodeBadValue`。Method 调用与数组写入暂不支持。
-- FANUC.CIP 新增局域网设备扫描：用 EtherNet/IP 标准的 ListIdentity
-  （44818/UDP）发现网段内的 FANUC 机器人（厂商号 591），广播与逐主机两种
-  目标都扫，型号与版本取自设备自述的身份信息；非 FANUC 的 EtherNet/IP
-  设备不上报。部分控制器或现场网络不回应 UDP ListIdentity，扫不到不等于
-  网段里没有设备。
-- FANUC.CIP 新增点位扫描：按所选类型（Long / DWord / Float）扫描一段数值
-  寄存器号，列出读得到的 R[n] 与当前值。连续有效区间用块读快速扫过，块读
-  被拒或中间夹着另一类寄存器时二分降级到单点；首次块读会用单点读交叉校验，
-  发现设备忽略起始号时改走单读。控制器不提供寄存器总数，范围由用户指定，
-  产出的是候选清单；整型与实型是两个不同的对象，一次扫描只覆盖其中一类。
-  超出预算时返回已完成的部分并把「未扫完」标出来。
-
-### Added
-
-- Control writes for `OPC.UA`: implements `driver.Writer` and declares
-  `Writable: true`, writing a Variable's Value attribute through the OPC UA
-  Write service. Values are encoded as the Variant matching the point's
-  internal data type (bool / integer / float / string / byteString (hex) /
-  datetime). Read-only nodes or insufficient user access return
-  `WriteCodeNotWritable`; type or range errors return `WriteCodeBadValue`.
-  Method calls and array writes are not supported yet.
-- Device discovery for `FANUC.CIP`: uses the standard EtherNet/IP ListIdentity
-  (44818/UDP) to find FANUC robots (vendor ID 591) on the subnet, scanning both
-  broadcast and per-host targets. Model and version come from the device's
-  self-reported identity; non-FANUC EtherNet/IP devices are not reported. Some
-  controllers or site networks do not answer UDP ListIdentity, so an empty
-  result does not prove there are no devices.
-- Point discovery for `FANUC.CIP`: scans a range of numeric register numbers
-  of the selected type (Long / DWord / Float) and lists the R[n] that can be
-  read with their current values. Contiguous valid ranges are read in blocks;
-  when a block is rejected or the range contains registers of the other type,
-  the scan degrades to binary splits down to single reads. The first block
-  read is cross-checked with single reads, and the scan switches to single
-  reads if the controller ignores the start number. The controller does not
-  expose a register count, so the range is user-specified and the result is a
-  candidate list; integer and real registers are different objects, and one
-  scan covers only one type. On timeout the completed part is returned with
-  the scan marked incomplete.
-
-## [0.4.1] - 2026-11-18
+## [0.4.1] - 2026-11-19
 
 ### 新增
 
@@ -68,8 +20,24 @@ This repository is versioned independently from the gateway and the SDK.
   设为 1 即关闭。首次块读用单点读交叉校验；设备拒绝、响应长度不符或数据
   错位时当场退回单读，并暂停该 class 的块读 5 分钟。相邻 100 点的帧数从
   100 降到 1。
-- P0 范围**不含**位置寄存器 PR/CURPOS、DI/DO/GI/GO、字符串寄存器 SR 与
-  设备/点位扫描。这些对象的载荷布局与 Assembly 实例需要真机核对后再开放。
+- FANUC.CIP 新增局域网设备扫描：用 EtherNet/IP 标准的 ListIdentity
+  （44818/UDP）发现网段内的 FANUC 机器人（厂商号 591），广播与逐主机两种
+  目标都扫，型号与版本取自设备自述的身份信息；非 FANUC 的 EtherNet/IP
+  设备不上报。部分控制器或现场网络不回应 UDP ListIdentity，扫不到不等于
+  网段里没有设备。
+- FANUC.CIP 新增点位扫描：按所选类型（Long / DWord / Float）扫描一段数值
+  寄存器号，列出读得到的 R[n] 与当前值。连续有效区间用块读快速扫过，块读
+  被拒或中间夹着另一类寄存器时二分降级到单点；首次块读会用单点读交叉校验，
+  发现设备忽略起始号时改走单读。控制器不提供寄存器总数，范围由用户指定，
+  产出的是候选清单；整型与实型是两个不同的对象，一次扫描只覆盖其中一类。
+  超出预算时返回已完成的部分并把「未扫完」标出来。
+- OPC.UA 新增控制下发：实现 `driver.Writer` 并声明 `Writable: true`，
+  经 OPC UA Write 服务写 Variable 的 Value 属性。值按点位内部类型编码为
+  对应的 Variant（bool / 整型 / 浮点 / string / byteString(hex) / datetime）；
+  节点只读或当前用户无权限返回 `WriteCodeNotWritable`，类型或范围错误返回
+  `WriteCodeBadValue`。Method 调用与数组写入暂不支持。
+- P0 范围**不含**位置寄存器 PR/CURPOS、DI/DO/GI/GO 与字符串寄存器 SR。
+  这些对象的载荷布局与 Assembly 实例需要真机核对后再开放。
 - 线协议 `APIVersion` 保持 4；新增驱动只依赖既有接口，旧网关无需升级，
   插件需按当前 SDK（v0.4.0）重新编译。
 
@@ -89,9 +57,33 @@ This repository is versioned independently from the gateway and the SDK.
   shifted data the driver falls back to single reads immediately and pauses
   block reads for that class for 5 minutes. 100 adjacent points go from 100
   frames to 1.
-- Out of P0 scope: position registers (PR/CURPOS), DI/DO/GI/GO, string
-  registers (SR) and device/point discovery. Their payload layouts and
-  Assembly instances need on-hardware verification first.
+- Device discovery for `FANUC.CIP`: uses the standard EtherNet/IP ListIdentity
+  (44818/UDP) to find FANUC robots (vendor ID 591) on the subnet, scanning both
+  broadcast and per-host targets. Model and version come from the device's
+  self-reported identity; non-FANUC EtherNet/IP devices are not reported. Some
+  controllers or site networks do not answer UDP ListIdentity, so an empty
+  result does not prove there are no devices.
+- Point discovery for `FANUC.CIP`: scans a range of numeric register numbers
+  of the selected type (Long / DWord / Float) and lists the R[n] that can be
+  read with their current values. Contiguous valid ranges are read in blocks;
+  when a block is rejected or the range contains registers of the other type,
+  the scan degrades to binary splits down to single reads. The first block
+  read is cross-checked with single reads, and the scan switches to single
+  reads if the controller ignores the start number. The controller does not
+  expose a register count, so the range is user-specified and the result is a
+  candidate list; integer and real registers are different objects, and one
+  scan covers only one type. On timeout the completed part is returned with
+  the scan marked incomplete.
+- Control writes for `OPC.UA`: implements `driver.Writer` and declares
+  `Writable: true`, writing a Variable's Value attribute through the OPC UA
+  Write service. Values are encoded as the Variant matching the point's
+  internal data type (bool / integer / float / string / byteString (hex) /
+  datetime). Read-only nodes or insufficient user access return
+  `WriteCodeNotWritable`; type or range errors return `WriteCodeBadValue`.
+  Method calls and array writes are not supported yet.
+- Out of P0 scope: position registers (PR/CURPOS), DI/DO/GI/GO and string
+  registers (SR). Their payload layouts and Assembly instances need
+  on-hardware verification first.
 - Wire `APIVersion` stays 4; the new driver only uses existing interfaces, so
   no gateway upgrade is required. Rebuild plugins with the current SDK
   (v0.4.0).
