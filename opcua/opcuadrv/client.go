@@ -20,6 +20,9 @@ import (
 // 真实实现为 *opcua.Client；测试可注入替身。
 type uaClient interface {
 	opcua.ClientInterface
+	// Write 不在 opcua.ClientInterface 里（该接口只覆盖读/浏览），但
+	// *opcua.Client 有这个方法；驱动接口显式声明它，测试替身也据此实现。
+	Write(ctx context.Context, req *ua.WriteRequest) (*ua.WriteResponse, error)
 	Close(ctx context.Context) error
 }
 
@@ -90,6 +93,40 @@ func (c *OpcUaClient) ReadAttribute(ctx context.Context, nodes []*ua.NodeID,
 		return nil, err
 	}
 	return resp.Results, nil
+}
+
+// WriteValue 写入单个节点的 Value 属性，返回服务器对该节点的状态码。
+//
+// 一次请求只写一个节点：控制下发是逐点的，逐点请求让服务器对每个点位的
+// 否定应答（BadNotWritable、BadTypeMismatch…）原样落到该点的 WriteResult，
+// 不会因为同批里有一个坏点而让整批变成"状态未知"。
+//
+// 返回的 error 只表示**这次 RPC 整体失败**（网络、超时、服务器拒绝整个
+// 服务）；节点级状态在 StatusCode 里，两者由调用方分别处理。
+func (c *OpcUaClient) WriteValue(ctx context.Context, node *ua.NodeID,
+	value *ua.Variant) (ua.StatusCode, error) {
+	// EncodingMask 必须显式置上 DataValueValue：DataValue 的二进制编码由
+	// 这个掩码决定「哪些字段在线上存在」，掩码为 0 时 Value 会被整段丢弃。
+	// 症状极具迷惑性 —— 服务器回 StatusOK，但值根本没写进去。
+	resp, err := c.c.Write(ctx, &ua.WriteRequest{
+		NodesToWrite: []*ua.WriteValue{{
+			NodeID:      node,
+			AttributeID: ua.AttributeIDValue,
+			Value: &ua.DataValue{
+				EncodingMask: ua.DataValueValue,
+				Value:        value,
+			},
+		}},
+	})
+	if err != nil {
+		return 0, err
+	}
+	if resp == nil || len(resp.Results) == 0 {
+		// 服务器回了 WriteResponse 却没有逐节点结果：按"未预期的服务级失败"
+		// 处理（不是链路失败，不标记断开），由调用方归一成 Rejected。
+		return ua.StatusBadUnexpectedError, nil
+	}
+	return resp.Results[0], nil
 }
 
 // browseNextMaxRounds 单个批次的续页收尾上限。

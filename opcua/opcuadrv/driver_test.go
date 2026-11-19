@@ -19,6 +19,7 @@ import (
 // fakeClient gopcua 客户端替身：控制 Read/Send 行为，验证驱动逻辑。
 type fakeClient struct {
 	readFunc   func(ctx context.Context, req *ua.ReadRequest) (*ua.ReadResponse, error)
+	writeFunc  func(ctx context.Context, req *ua.WriteRequest) (*ua.WriteResponse, error)
 	sendFunc   func(ctx context.Context, req ua.Request) (ua.Response, error)
 	browseFunc func(ctx context.Context, req *ua.BrowseRequest) (*ua.BrowseResponse, error)
 	// nextFunc 省掉的续页请求次数由 browseNextCalls 记着，供分页测试断言。
@@ -47,6 +48,15 @@ func (f *fakeClient) Send(ctx context.Context, req ua.Request, h func(ua.Respons
 		return err
 	}
 	return h(resp)
+}
+
+// Write 默认回"服务不支持"——只有写路径测试会注入 writeFunc；读路径测试
+// 误触发写入时能立刻看到明确的状态码，而不是 nil panic。
+func (f *fakeClient) Write(ctx context.Context, req *ua.WriteRequest) (*ua.WriteResponse, error) {
+	if f.writeFunc == nil {
+		return nil, ua.StatusBadServiceUnsupported
+	}
+	return f.writeFunc(ctx, req)
 }
 
 func (f *fakeClient) RequestTimeout() time.Duration { return 5 * time.Second }

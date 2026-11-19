@@ -10,6 +10,11 @@ This repository is versioned independently from the gateway and the SDK.
 
 ### 新增
 
+- OPC.UA 新增控制下发：实现 `driver.Writer` 并声明 `Writable: true`，
+  经 OPC UA Write 服务写 Variable 的 Value 属性。值按点位内部类型编码为
+  对应的 Variant（bool / 整型 / 浮点 / string / byteString(hex) / datetime）；
+  节点只读或当前用户无权限返回 `WriteCodeNotWritable`，类型或范围错误返回
+  `WriteCodeBadValue`。Method 调用与数组写入暂不支持。
 - FANUC.CIP 新增局域网设备扫描：用 EtherNet/IP 标准的 ListIdentity
   （44818/UDP）发现网段内的 FANUC 机器人（厂商号 591），广播与逐主机两种
   目标都扫，型号与版本取自设备自述的身份信息；非 FANUC 的 EtherNet/IP
@@ -24,6 +29,13 @@ This repository is versioned independently from the gateway and the SDK.
 
 ### Added
 
+- Control writes for `OPC.UA`: implements `driver.Writer` and declares
+  `Writable: true`, writing a Variable's Value attribute through the OPC UA
+  Write service. Values are encoded as the Variant matching the point's
+  internal data type (bool / integer / float / string / byteString (hex) /
+  datetime). Read-only nodes or insufficient user access return
+  `WriteCodeNotWritable`; type or range errors return `WriteCodeBadValue`.
+  Method calls and array writes are not supported yet.
 - Device discovery for `FANUC.CIP`: uses the standard EtherNet/IP ListIdentity
   (44818/UDP) to find FANUC robots (vendor ID 591) on the subnet, scanning both
   broadcast and per-host targets. Model and version come from the device's

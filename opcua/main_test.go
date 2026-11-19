@@ -62,6 +62,22 @@ func TestFactoriesMatchProtocols(t *testing.T) {
 	}
 }
 
+// TestWritableMatchesWriter 声明与实现必须一致：Writable=true 的协议，
+// 工厂返回的驱动必须实现 driver.Writer；反之亦然。
+//
+// driversdk.Serve 会在启动时拒绝"声明了 Writable 但没有 Writer"的插件，
+// 但在 CI 里失败能直接定位到 main.go 漏声明（或 write.go 被误删）。
+func TestWritableMatchesWriter(t *testing.T) {
+	fs := factories()
+	for _, p := range meta().Protocols {
+		drv := fs[p.Name]()
+		_, isWriter := drv.(driver.Writer)
+		if p.Writable != isWriter {
+			t.Errorf("协议 %s: Writable=%v，但驱动实现 Writer=%v", p.Name, p.Writable, isWriter)
+		}
+	}
+}
+
 // TestProtocolIdentityPinned 协议名与 scope 必须逐字等于内置时代的原值。
 //
 // 这是本文件里最重要的两个字面量：`device.protocol_id` → `iot_protocol.name`

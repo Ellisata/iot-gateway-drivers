@@ -33,9 +33,9 @@ remain AGPL-3.0.
 | `abb/` | ABB.RWS |
 | `dlt645/` | DLT645.Serial / DLT645.TCP |
 
-> **Control writes**: Modbus, S7, Mitsubishi MC, FINS, Omron CIP, Rockwell CIP and
-> FANUC CIP implement `driver.Writer` and declare `Writable: true`. The gateway
-> must also enable `control.enabled`, and the point must have `W` in
+> **Control writes**: Modbus, S7, Mitsubishi MC, FINS, Omron CIP, Rockwell CIP,
+> FANUC CIP and OPC UA implement `driver.Writer` and declare `Writable: true`. The
+> gateway must also enable `control.enabled`, and the point must have `W` in
 > `rw_permission`. Writable areas:
 >
 > - Modbus: coils (0x) and holding registers (4x);
@@ -46,14 +46,19 @@ remain AGPL-3.0.
 > - Omron CIP: 0x4D Write Service for Variables;
 > - Rockwell CIP: 0x4D Write Tag (STRING is not supported yet);
 > - FANUC CIP: numeric registers R[] (integer 0x6B / real 0x6C). Position registers
->   (PR/CURPOS), I/O and string registers are not supported yet.
+>   (PR/CURPOS), I/O and string registers are not supported yet;
+> - OPC UA: the Value attribute of a Variable (Write service). Values are encoded
+>   as the OPC UA type matching the point's internal data type (bool / integer /
+>   float / string / byteString (hex) / datetime); read-only nodes or insufficient
+>   user access return `WriteCodeNotWritable`. Method calls and array writes are
+>   not supported yet.
 >
 > FANUC CIP supports block reads of numeric registers (`Get_Attribute_All`):
 > 100 registers per request by default, max 124; set 1 to disable. The first
 > block read is cross-checked with single reads; on rejection or shifted data
 > the driver falls back to single reads and pauses block reads for 5 minutes.
 >
-> OPC UA, ABB RWS and DL/T 645 remain read-only.
+> ABB RWS and DL/T 645 remain read-only.
 
 Tests use the fake PLC servers from the SDK's
 [`testkit`](https://github.com/Ellisata/iot-gateway-sdk/tree/main/testkit)

@@ -28,7 +28,7 @@
 | `dlt645/` | DLT645.Serial / DLT645.TCP |
 
 > **控制下发**：Modbus、S7、三菱 MC、FINS、Omron CIP、Rockwell CIP、FANUC CIP
-> 均已实现 `driver.Writer` 并声明 `Writable: true`。网关侧还需打开
+> 与 OPC UA 均已实现 `driver.Writer` 并声明 `Writable: true`。网关侧还需打开
 > `control.enabled`，且点位 `rw_permission` 含 `W` 才会真正下发。可写范围：
 >
 > - Modbus：线圈（0x）与保持寄存器（4x）；
@@ -38,13 +38,17 @@
 > - Omron CIP：0x4D Write Service for Variables；
 > - Rockwell CIP：0x4D Write Tag（STRING 暂不支持）；
 > - FANUC CIP：数值寄存器 R[]（整型 0x6B / 实型 0x6C）。位置寄存器
->   PR/CURPOS、I/O 与字符串寄存器尚不支持。
+>   PR/CURPOS、I/O 与字符串寄存器尚不支持；
+> - OPC UA：Variable 的 Value 属性（Write 服务）。值按点位内部类型编码为
+>   对应的 OPC UA 类型（bool / 整型 / 浮点 / string / byteString(hex) /
+>   datetime）；节点只读或当前用户无权限时返回 `WriteCodeNotWritable`。
+>   Method 调用与数组写入暂不支持。
 >
 > FANUC CIP 的数值寄存器支持块读（`Get_Attribute_All`）：默认 100 个/请求、
 > 上限 124；设为 1 关闭。首次块读会用单点读交叉校验，设备拒绝或数据错位时
 > 自动退回单读并暂停块读 5 分钟。
 >
-> OPC UA、ABB RWS、DL/T 645 目前只读。
+> ABB RWS、DL/T 645 目前只读。
 
 测试使用 SDK [`testkit`](https://github.com/Ellisata/iot-gateway-sdk/tree/main/testkit) 模块中的假 PLC 服务器；它们不在本仓库内。
 

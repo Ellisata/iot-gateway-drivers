@@ -101,3 +101,82 @@ func TestOpcUaDriverIntegration(t *testing.T) {
 		}
 	}
 }
+
+// TestOpcUaDriverWriteIntegration 用 gopcua 进程内服务器验证真实写路径：
+// 多个类型经 Write 服务下发后，Read 能读回新值；不存在的节点返回地址级错误。
+func TestOpcUaDriverWriteIntegration(t *testing.T) {
+	port := freePort(t)
+	srv := server.New(server.EndPoint("127.0.0.1", port))
+	defer srv.Close()
+
+	ns := server.NewNodeNameSpace(srv, "urn:test:opcua:write")
+	nsID := ns.ID()
+	ns.AddNode(server.NewVariableNode(ua.NewNumericNodeID(nsID, 2001), "SetTemp", float32(20)))
+	ns.AddNode(server.NewVariableNode(ua.NewNumericNodeID(nsID, 2002), "Enable", false))
+	ns.AddNode(server.NewVariableNode(ua.NewNumericNodeID(nsID, 2003), "Count", int32(1)))
+	ns.AddNode(server.NewVariableNode(ua.NewNumericNodeID(nsID, 2004), "Name", "old"))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := srv.Start(ctx); err != nil {
+		t.Fatalf("start test server: %v", err)
+	}
+
+	d := newOpcUaDriver()
+	if err := d.Connect(fmt.Sprintf(`{"host":"127.0.0.1","port":%d}`, port)); err != nil {
+		t.Fatalf("Connect() error: %v", err)
+	}
+	defer d.Close()
+
+	reqs := []driver.WriteRequest{
+		{DeviceAddressID: "temp", Name: fmt.Sprintf("ns=%d;i=2001", nsID), DataType: "float32", Value: "30.5"},
+		{DeviceAddressID: "en", Name: fmt.Sprintf("ns=%d;i=2002", nsID), DataType: "bool", Value: "1"},
+		{DeviceAddressID: "cnt", Name: fmt.Sprintf("ns=%d;i=2003", nsID), DataType: "int32", Value: "99"},
+		{DeviceAddressID: "name", Name: fmt.Sprintf("ns=%d;i=2004", nsID), DataType: "string", Value: "new"},
+	}
+	results, err := d.Write(reqs)
+	if err != nil {
+		t.Fatalf("Write() error: %v", err)
+	}
+	for i, r := range results {
+		if r.Code != driver.WriteCodeOK {
+			t.Errorf("result[%d] (%s) Code = %d, want OK (%s)", i, reqs[i].DeviceAddressID, r.Code, r.Message)
+		}
+	}
+
+	// 回读确认确实写进了服务器的地址空间（不是只拿到了 OK 状态码）。
+	addrs := []driver.DeviceAddress{
+		{ID: "temp", Name: fmt.Sprintf("ns=%d;i=2001", nsID), DataType: "float32"},
+		{ID: "en", Name: fmt.Sprintf("ns=%d;i=2002", nsID), DataType: "bool"},
+		{ID: "cnt", Name: fmt.Sprintf("ns=%d;i=2003", nsID), DataType: "int32"},
+		{ID: "name", Name: fmt.Sprintf("ns=%d;i=2004", nsID), DataType: "string"},
+	}
+	read, err := d.Read(addrs)
+	if err != nil {
+		t.Fatalf("Read() error: %v", err)
+	}
+	want := []string{"30.5", "1", "99", "new"}
+	for i, w := range want {
+		if read[i].Value != w {
+			t.Errorf("%s 回读值 = %q, want %q", addrs[i].ID, read[i].Value, w)
+		}
+		if read[i].Quality != driver.QualityGood {
+			t.Errorf("%s 回读 Quality = %d, want Good", addrs[i].ID, read[i].Quality)
+		}
+	}
+
+	// 不存在的节点：服务器回 BadNodeIDUnknown → 地址级错误，不是链路失败。
+	results, err = d.Write([]driver.WriteRequest{{
+		DeviceAddressID: "missing", Name: fmt.Sprintf("ns=%d;i=9999", nsID),
+		DataType: "int32", Value: "1",
+	}})
+	if err != nil {
+		t.Fatalf("Write(missing) error: %v", err)
+	}
+	if results[0].Code != driver.WriteCodeBadAddress {
+		t.Errorf("missing node Code = %d, want BadAddress (%s)", results[0].Code, results[0].Message)
+	}
+	if !d.IsConnected() {
+		t.Error("BadNodeIDUnknown 是地址级错误，不应标记断开")
+	}
+}

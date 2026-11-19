@@ -96,8 +96,11 @@ func meta() driversdk.Meta {
 			{
 				Name:            protocolName,
 				SerialExclusive: false,
-				Description:     "OPC UA",
-				FormJSON:        json.RawMessage(formOpcUa),
+				// 控制下发：写 Variable 的 Value 属性（Write 服务），
+				// 节点是否可写由服务器按 AccessLevel 判定。
+				Writable:    true,
+				Description: "OPC UA",
+				FormJSON:    json.RawMessage(formOpcUa),
 				// 两项扫描能力都声明。OPC UA 只有一个协议、只走 opc.tcp 长连接，
 				// 所以没有 MC 那种"串口只能声明一半"的不对称（那边 Discovery
 				// 被 Meta.Validate 明文禁止挂在串口协议上）。
