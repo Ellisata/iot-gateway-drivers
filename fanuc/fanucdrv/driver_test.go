@@ -5,8 +5,11 @@ package fanuc
 
 import (
 	"fmt"
+	"net"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/Ellisata/iot-gateway-sdk/driver"
 
@@ -432,6 +435,58 @@ func TestPingAcceptsGeneralStatusAsReachable(t *testing.T) {
 	d := newFANUCDriver()
 	if err := d.Ping(configJSON(f)); err != nil {
 		t.Fatalf("Ping() = %v，通用状态错误应视为可达", err)
+	}
+}
+
+// TestHandshakeTimesOutOnSilentPeer 覆盖「TCP 能连上、但对 EtherNet/IP 请求
+// 一声不吭」的对端 —— 把 FANUC PC Interface 的 60008 当成 E/IP 端口配进来
+// 就是这种画像。
+//
+// 没有握手 deadline 时 RegisterSession 的 ReadFull 永不返回：网关侧 30s
+// ping 超时，插件侧那个 goroutine 却一直挂着，重复几次就累积超时并触发
+// 插件卡死重启。
+func TestHandshakeTimesOutOnSilentPeer(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+
+	// 收下连接后一个字都不回，只把它们留到测试结束。
+	var mu sync.Mutex
+	var conns []net.Conn
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			mu.Lock()
+			conns = append(conns, c)
+			mu.Unlock()
+		}
+	}()
+	t.Cleanup(func() {
+		ln.Close()
+		mu.Lock()
+		for _, c := range conns {
+			c.Close()
+		}
+		mu.Unlock()
+	})
+
+	port := ln.Addr().(*net.TCPAddr).Port
+	cfg := fmt.Sprintf(`{"host":"127.0.0.1","port":%d,"timeoutMs":300}`, port)
+
+	start := time.Now()
+	err = newFANUCDriver().Ping(cfg)
+	if err == nil {
+		t.Fatal("Ping() = nil，对端不应答时必须报错")
+	}
+	if !strings.Contains(err.Error(), "register session") {
+		t.Fatalf("Ping() = %v，期望握手阶段的错误", err)
+	}
+	if elapsed := time.Since(start); elapsed > 3*time.Second {
+		t.Fatalf("Ping() 耗时 %v，握手超时没有生效（配置 timeoutMs=300）", elapsed)
 	}
 }
 

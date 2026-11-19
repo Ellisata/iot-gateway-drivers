@@ -124,6 +124,16 @@ func (c *client) registerSession() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	// 握手必须有超时。对端「TCP 端口开着、但不讲 EtherNet/IP」是真实情形
+	//（把 FANUC 的 PC Interface 端口 60008 当成 E/IP 端口配进来就是这样）：
+	// dial 成功，而 RegisterSession 的应答永远不来。不设 deadline 时
+	// readFrameLocked 会永久阻塞 —— 网关侧 ping 到 30s 放弃，插件侧这个
+	// goroutine 却一直挂着，重复几次就会累积超时并触发卡死重启。
+	// 与 roundTripLocked 同一口径：整个握手共用一个超时预算。
+	if err := c.conn.SetDeadline(time.Now().Add(c.timeout)); err != nil {
+		return fmt.Errorf("fanuc: set handshake deadline failed: %w", err)
+	}
+
 	frame := cipcore.BuildRegisterSession(0, cipcore.EncapProtocolVersion)
 	if err := c.writeAllLocked(frame); err != nil {
 		return fmt.Errorf("fanuc: register session write failed: %w", err)
@@ -151,13 +161,21 @@ func (c *client) registerSession() error {
 //
 // 返回通用状态错误时连接仍然可用；传输层错误会让 client 标记断开。
 func (c *client) readAttr(class uint16, index uint16) ([]byte, error) {
+	return c.readAttrUntil(class, index, time.Now().Add(c.timeout))
+}
+
+// readAttrUntil 与 readAttr 相同，但整次请求+响应必须在 deadline 之前完成。
+//
+// 点位扫描用这条路径：扫描的预算（网关钳到 7s）比单次请求超时（默认 5s）只大
+// 一点，一次慢请求就可能把整次 RPC 拖过界；而超预算会累积插件卡死计数。
+func (c *client) readAttrUntil(class uint16, index uint16, deadline time.Time) ([]byte, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.conn == nil || !c.connected {
 		return nil, fmt.Errorf("fanuc: not connected")
 	}
-	resp, err := c.roundTripLocked(cipcore.BuildGetAttributeSingle(class, registerInstance, index))
+	resp, err := c.roundTripUntilLocked(cipcore.BuildGetAttributeSingle(class, registerInstance, index), deadline)
 	if err != nil {
 		return nil, err
 	}
@@ -169,13 +187,18 @@ func (c *client) readAttr(class uint16, index uint16) ([]byte, error) {
 // 返回的数据是 count 个 4 字节值按寄存器号升序拼接。设备拒绝时返回通用状态
 // 错误（连接仍可用），由驱动决定回退单读还是暂时禁用块读。
 func (c *client) readBlock(class uint16, start uint16, count int) ([]byte, error) {
+	return c.readBlockUntil(class, start, count, time.Now().Add(c.timeout))
+}
+
+// readBlockUntil 与 readBlock 相同，但整次请求+响应必须在 deadline 之前完成。
+func (c *client) readBlockUntil(class uint16, start uint16, count int, deadline time.Time) ([]byte, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.conn == nil || !c.connected {
 		return nil, fmt.Errorf("fanuc: not connected")
 	}
-	resp, err := c.roundTripLocked(cipcore.BuildGetAttributeBlock(class, start, count))
+	resp, err := c.roundTripUntilLocked(cipcore.BuildGetAttributeBlock(class, start, count), deadline)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +223,18 @@ func (c *client) writeAttr(class uint16, index uint16, data []byte) error {
 
 // roundTripLocked 发一条 SendRRData 并取回 CIP 响应字节（调用方持有 c.mu）。
 func (c *client) roundTripLocked(cipReq []byte) ([]byte, error) {
-	if err := c.conn.SetDeadline(time.Now().Add(c.timeout)); err != nil {
+	return c.roundTripUntilLocked(cipReq, time.Now().Add(c.timeout))
+}
+
+// roundTripUntilLocked 与 roundTripLocked 相同，但 deadline 由调用方给定。
+//
+// 实际套接字截止时刻取「deadline」与「now + c.timeout」的**较小者**：调用方
+// 给的预算再大，单次请求也不该超过设备配置的超时。
+func (c *client) roundTripUntilLocked(cipReq []byte, deadline time.Time) ([]byte, error) {
+	if limit := time.Now().Add(c.timeout); limit.Before(deadline) {
+		deadline = limit
+	}
+	if err := c.conn.SetDeadline(deadline); err != nil {
 		c.failLocked()
 		return nil, fmt.Errorf("fanuc: set deadline failed: %w", err)
 	}

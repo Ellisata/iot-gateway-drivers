@@ -35,6 +35,7 @@ package main
 import (
 	"encoding/json"
 
+	"github.com/Ellisata/iot-gateway-sdk/driver"
 	"github.com/Ellisata/iot-gateway-sdk/driversdk"
 
 	fanucdrv "github.com/Ellisata/iot-gateway-drivers/fanuc/fanucdrv"
@@ -89,9 +90,12 @@ func meta() driversdk.Meta {
 				Writable:        true,
 				Description:     "FANUC 机器人 EtherNet/IP（CIP 显式消息）",
 				FormJSON:        json.RawMessage(formFANUC),
-				// 扫描与点位扫描都未声明：ListIdentity 只能发现设备，但
-				// "这是一台 FANUC 机器人"与"它有哪些寄存器"是两件事；
-				// 在真机核对完寄存器范围之前，不放出会返回空清单的按钮。
+				// EtherNet/IP 标准的 ListIdentity 广播发现，实现见 fanucdrv/probe.go。
+				// 只上报厂商号 591 的设备。
+				Discovery: fanucdrv.Discovery(),
+				// 数值寄存器范围扫描（R[n]），实现见 fanucdrv/pointscan.go。
+				// FANUC 没有原生的标签枚举，产出的是"指定范围内读得到的地址"。
+				PointDiscovery: fanucdrv.PointDiscovery(),
 			},
 		},
 		Scope:       pluginScope,
@@ -110,9 +114,34 @@ func factories() driversdk.Factories {
 	}
 }
 
+// probers 协议名 → 扫描探测实现。键必须与 meta() 里声明了 Discovery 的协议
+// 逐一对应，否则 Serve 会在启动时报错（main_test.go 的 TestProbersMatchDiscovery
+// 也钉住了这条不变式）。
+func probers() driversdk.Probers {
+	return driversdk.Probers{
+		protocolName: func(req driversdk.ProbeRequest) ([]driver.DiscoveredDevice, error) {
+			return fanucdrv.Probe(req.Target, req.Options, req.Budget)
+		},
+	}
+}
+
+// finders 协议名 → 点位扫描实现。键必须与 meta() 里声明了 PointDiscovery 的
+// 协议逐一对应，否则 Serve 会在启动时报错（main_test.go 的
+// TestPointFindersMatchPointDiscovery 也钉住了这条不变式）。
+func finders() driversdk.PointFinders {
+	return driversdk.PointFinders{
+		protocolName: func(req driversdk.FindPointsRequest) (*driver.PointScanResult, error) {
+			return fanucdrv.ScanPoints(req.Session, req.Options, req.Deadline)
+		},
+	}
+}
+
 // version is overridden at build time with -ldflags "-X main.version=<tag>".
 var version = "dev"
 
 func main() {
-	driversdk.Main(factories(), meta(), driversdk.Capabilities{})
+	driversdk.Main(factories(), meta(), driversdk.Capabilities{
+		Probers:      probers(),
+		PointFinders: finders(),
+	})
 }
