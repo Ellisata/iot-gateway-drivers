@@ -81,6 +81,25 @@ type mcDriver struct {
 	// 恒不可读），不去重就是每个采集周期把同一行刷一遍。
 	warnMu sync.Mutex
 	warned map[string]warnEntry
+
+	// serialOpener 由网关在启用串口代理时注入（见 driver.SerialTransportProvider）。
+	// nil = 直接打开本机串口。只影响 Serial 传输。
+	serialOpener driver.SerialTransportOpener
+}
+
+var _ driver.SerialTransportProvider = (*mcDriver)(nil)
+
+// SetSerialTransport 见 driver.SerialTransportProvider。
+func (d *mcDriver) SetSerialTransport(opener driver.SerialTransportOpener) {
+	d.mu.Lock()
+	d.serialOpener = opener
+	d.mu.Unlock()
+}
+
+func (d *mcDriver) serialOpen() driver.SerialTransportOpener {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.serialOpener
 }
 
 // mcPlan 一个批次的区间读取计划（driver.RangeSig 内容指纹 → 计划）。
@@ -146,7 +165,7 @@ func (d *mcDriver) Connect(protocolJSON string) error {
 		old.Close()
 	}
 
-	client, err := newTransport(cfg)
+	client, err := newTransport(cfg, d.serialOpen())
 	if err != nil {
 		return fmt.Errorf("mc: connect failed: %w", err)
 	}
@@ -217,8 +236,9 @@ func (d *mcDriver) Ping(protocolJSON string) error {
 		return nil
 	}
 
-	// 无状态握手：建立临时连接做轻量读后立即关闭，不修改驱动内部状态
-	client, err := newTransport(cfg)
+	// 无状态握手：建立临时连接做轻量读后立即关闭，不修改驱动内部状态。
+	// 代理模式下临时连接同样走宿主字节流，避免抢占同一个物理口的第二个 fd。
+	client, err := newTransport(cfg, d.serialOpen())
 	if err != nil {
 		return fmt.Errorf("mc: ping connect failed: %w", err)
 	}

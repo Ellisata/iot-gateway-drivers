@@ -337,7 +337,7 @@ func probeFINS(target driver.ScanTarget, options json.RawMessage, budget time.Du
 		}
 
 		cfg := scanConfig(host, port, node, transport, wait)
-		client, err := newTransport(cfg)
+		client, err := newTransport(cfg, nil)
 		if err != nil {
 			if isDialErr(err) {
 				// 链路层就没通：可达性与节点号无关，换一个候选只会把同一个

@@ -215,7 +215,7 @@ func ProbeTCP(target driver.ScanTarget, options json.RawMessage, budget time.Dur
 		return nil, nil
 	}
 
-	client, err := newTransport(scanConfig(host, port, wait))
+	client, err := newTransport(scanConfig(host, port, wait), nil)
 	if err != nil {
 		if isDialErr(err) {
 			// 链路层就没通。与 S7 / FINS 同一条取舍：协议层的候选参数（这里是

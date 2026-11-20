@@ -158,7 +158,10 @@ func meta() driversdk.Meta {
 				// 串口独占 RS-485 总线：采集引擎据此整轮持设备锁（重连 + 全部读取 +
 				// 转换 + 推送），保证总线上帧不被交错。TCP 为 false。
 				SerialExclusive: true,
-				Description:     "DL/T 645 电能表 串口（RS-485 / RS-232）",
+				// 支持网关代理串口：与 Modbus.RTU 等其它插件进程配到同一个物理口时，
+				// 由网关持有唯一句柄（driver.SerialTransportProvider）。
+				SerialProxy:    true,
+				Description:    "DL/T 645 电能表 串口（RS-485 / RS-232）",
 				FormJSON:        json.RawMessage(formSerial),
 				PointDiscovery:  dlt645drv.PointDiscovery(),
 			},

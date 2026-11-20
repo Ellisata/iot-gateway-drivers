@@ -118,7 +118,7 @@ func TestLookupDataType(t *testing.T) {
 func TestParseConfigTransportDefault(t *testing.T) {
 	// 默认 transport 为 UDP，newTransport 应创建 UDP 客户端
 	cfg := DefaultFINSConfig()
-	tp, err := newTransport(cfg)
+	tp, err := newTransport(cfg, nil)
 	if err != nil {
 		t.Fatalf("newTransport(default) = %v", err)
 	}

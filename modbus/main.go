@@ -137,6 +137,9 @@ func meta() driversdk.Meta {
 				// RTU 独占串行总线：采集引擎据此整轮持设备锁，
 				// 保证总线上帧不被交错。TCP 为 false。
 				SerialExclusive: true,
+				// 支持网关代理串口：与 DL/T 645 等其它插件进程配到同一个物理口时，
+				// 由网关持有唯一句柄，避免两个进程各持一个 fd 瓜分字节。
+				SerialProxy: true,
 				// 与 TCP 一样支持写线圈与保持寄存器。
 				Writable:    true,
 				Description: "Modbus RTU 串口",

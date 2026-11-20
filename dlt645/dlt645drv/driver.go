@@ -40,6 +40,19 @@ type dlt645Driver struct {
 	client    dlt645Transport
 	plans     planCache
 	problems  problemLog // 抑制「每轮采集都报一次」的重复告警（见 problemLog.go）
+
+	// serialOpener 由网关在启用串口代理时注入（见 driver.SerialTransportProvider）。
+	// nil = 直接打开本机串口。只影响串口传输，TCP 传输不看它。
+	serialOpener driver.SerialTransportOpener
+}
+
+var _ driver.SerialTransportProvider = (*dlt645Driver)(nil)
+
+// SetSerialTransport 见 driver.SerialTransportProvider。
+func (d *dlt645Driver) SetSerialTransport(opener driver.SerialTransportOpener) {
+	d.mu.Lock()
+	d.serialOpener = opener
+	d.mu.Unlock()
 }
 
 // SerialExclusive 串口独占 RS-485 总线，需整轮持锁（重连 + 全部读取 + 转换 + 推送）；
@@ -78,7 +91,10 @@ func (d *dlt645Driver) Connect(protocolJSON string) error {
 	// 问题状态同样作废：重连后大概率是另一块表，旧表的问题不该继续压着新表的告警
 	d.problems.clear()
 
-	client, err := newTransport(cfg)
+	d.mu.RLock()
+	opener := d.serialOpener
+	d.mu.RUnlock()
+	client, err := newTransport(cfg, opener)
 	if err != nil {
 		return fmt.Errorf("dlt645: 建立连接失败: %w", err)
 	}
@@ -118,8 +134,13 @@ func (d *dlt645Driver) Ping(protocolJSON string) error {
 		return nil
 	}
 
-	// 无状态握手：建立临时连接做轻量读后立即关闭，不修改驱动内部状态
-	client, err := newTransport(cfg)
+	// 无状态握手：建立临时连接做轻量读后立即关闭，不修改驱动内部状态。
+	// 代理模式下临时连接同样走宿主字节流 —— 否则会与采集会话抢同一个物理口的
+	// 第二个 fd，把"测试连接"变成一次端口冲突。
+	d.mu.RLock()
+	opener := d.serialOpener
+	d.mu.RUnlock()
+	client, err := newTransport(cfg, opener)
 	if err != nil {
 		return fmt.Errorf("dlt645: ping 建立连接失败: %w", err)
 	}

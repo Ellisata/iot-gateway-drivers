@@ -162,10 +162,7 @@ func TestModbusRTUDriver_MatchConnection(t *testing.T) {
 		d := &modbusRTUDriver{}
 		d.config = &ModbusRTUConfig{ComPort: comPort, BaudRate: baud, DataBits: 8,
 			StopBits: 1, Parity: "N", UnitID: slave}
-		d.client = &ModbusRTUClient{
-			comPort: comPort, baudRate: baud, dataBits: 8, stopBits: 1,
-			parity: "N", slaveID: slave, connected: true,
-		}
+		d.client = newTestRTUClient(comPort, baud, slave, true)
 		return d
 	}
 
@@ -201,10 +198,7 @@ func TestModbusRTUDriver_MatchConnection(t *testing.T) {
 // TestModbusRTUDriver_MatchConnection_NotConnected 句柄已断开时不得复用。
 func TestModbusRTUDriver_MatchConnection_NotConnected(t *testing.T) {
 	d := &modbusRTUDriver{}
-	d.client = &ModbusRTUClient{
-		comPort: "COM1", baudRate: 9600, dataBits: 8, stopBits: 1,
-		parity: "N", slaveID: 1, connected: false,
-	}
+	d.client = newTestRTUClient("COM1", 9600, 1, false)
 	d.config = &ModbusRTUConfig{ComPort: "COM1", BaudRate: 9600, DataBits: 8,
 		StopBits: 1, Parity: "N", UnitID: 1}
 

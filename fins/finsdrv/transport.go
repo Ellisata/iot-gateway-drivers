@@ -6,6 +6,8 @@ package fins
 import (
 	"net"
 	"strings"
+
+	"github.com/Ellisata/iot-gateway-sdk/driver"
 )
 
 // resolveSrcNode 解析 FINS 帧 SA1 源节点号（UDP/TCP 传输使用；Serial/HostLink 用 unitNo 不涉及）。
@@ -87,12 +89,14 @@ func (d *finsDriver) MatchConnection(protocolJSON string) bool {
 }
 
 // newTransport 按配置的传输方式创建对应传输层实例。
-func newTransport(cfg *FINSConfig) (finsTransport, error) {
+//
+// openSerial 非 nil 时 Serial 传输的字节流来自网关代理，否则直接打开本机串口。
+func newTransport(cfg *FINSConfig, openSerial driver.SerialTransportOpener) (finsTransport, error) {
 	switch strings.ToUpper(cfg.Transport) {
 	case TransportTCP:
 		return newFINSTCPClient(cfg)
 	case TransportSerial:
-		return newFINSSerialClient(cfg)
+		return newFINSSerialClient(cfg, openSerial)
 	case TransportHostLinkTCP:
 		return newFINSHostLinkTCPClient(cfg)
 	default:

@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/Ellisata/iot-gateway-sdk/driver"
 )
 
 // mcTransport MC 传输层接口。
@@ -36,10 +38,10 @@ type mcWriter interface {
 }
 
 // newTransport 按配置的传输方式创建对应传输层实例。
-func newTransport(cfg *MCConfig) (mcTransport, error) {
+func newTransport(cfg *MCConfig, openSerial driver.SerialTransportOpener) (mcTransport, error) {
 	switch cfg.Transport {
 	case TransportSerial:
-		return newMCSerialClient(cfg)
+		return newMCSerialClient(cfg, openSerial)
 	default:
 		return newMCTCPClient(cfg)
 	}

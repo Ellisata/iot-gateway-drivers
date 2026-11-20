@@ -6,6 +6,82 @@ All notable changes to the official iot-gateway drivers are documented here.
 Chinese entries come first under each release, followed by English entries.
 This repository is versioned independently from the gateway and the SDK.
 
+## [0.5.0] - 2026-11-20
+
+### 修复
+
+- **不同插件进程配到同一个物理口（issue #2 的终局修复）**：DL/T 645、FINS、
+  三菱 MC 与 Modbus RTU 现在都声明 `SerialProxy` 并实现
+  `driver.SerialTransportProvider`。网关判定同端口上的协议**全部**支持代理时，
+  物理句柄改由网关主进程持有，插件经 `serial.*` RPC 收发字节、共用网关的跨进程
+  总线锁；不再出现两个进程各持一个 fd、互相瓜分应答与打断 termios 的局面。
+  Modbus RTU 的代理路径用自定义 `Transporter` 走字节流（CRC 校验仍由 goburrow
+  的 Packager 完成）。旧网关、或同端口混有不支持代理的插件时保持直连，网关告警。
+- **多台设备共用一个串口会互相打断（Linux 上表现为"只有一台表能采集"）**：
+  DL/T 645、FINS（Host Link）、三菱 MC（4C Format5）与 Modbus RTU 的串口传输改为
+  通过 SDK 的 `driversdk/serialbus` 按物理端口共享句柄与总线锁。此前每个会话各开
+  一个句柄，同一个 tty 上两个读端会瓜分应答字节（日志里的「已收 7/9 字节」）、在
+  select 竞争失败时拿到 EAGAIN（`resource temporarily unavailable`），且任一方
+  `Close` 恢复 termios 都会打断另一方，最终表现为两台设备交替超时、串口反复
+  「连接已关闭/已连接」。现在一个物理端口只有一个句柄，最后一个会话关闭时才关端口；
+  端口名按 `driver.CanonicalSerialPort` 归一（Windows 大小写与 `\\.\`、Linux 软链）。
+- 同一端口但波特率/数据位/停止位/校验位不同，现在报明确的配置错误，而不是悄悄再开
+  一个句柄把上述问题原样复现（同一条总线上的设备必须参数一致）。
+- 读超时不再判死共享句柄 —— 它只说明本次没有应答；只有真正的链路 I/O 错误才换新句柄，
+  避免一台设备掉线把整条总线拖进反复重连。
+- Modbus RTU 的 `IdleTimeout` 在共享句柄下禁用：它会静默关闭端口并恢复 termios，
+  打断仍在收发其它从站的会话。「测试连接」的临时连接也改走同一张注册表，采集会话
+  占着端口时直接共享，不再二次打开（Windows 的 `Access is denied`）。
+
+### 变更
+
+- 依赖 SDK **v0.5.0**（`driver.CanonicalSerialPort`、`driversdk/serialbus`、
+  `driversdk/serialproxy` 与 `driver.SerialTransportProvider`）。
+  线协议 `APIVersion` 保持 4，旧网关无需升级；插件需按新 SDK 重新编译。
+
+- **Different plugin processes on one physical port** (the end-game fix for
+  issue #2): DL/T 645, FINS, Mitsubishi MC and Modbus RTU now declare
+  `SerialProxy` and implement `driver.SerialTransportProvider`. When every
+  protocol on a port supports proxying, the gateway process owns the only
+  physical handle and plugins exchange bytes over `serial.*` RPC, sharing the
+  gateway's cross-process bus lock. Two processes can no longer hold one fd
+  each and split answers or restore termios under one another. The Modbus RTU
+  proxy path uses a custom `Transporter` over the byte stream (CRC verification
+  still comes from goburrow's Packager). Old gateways, or a port that mixes in
+  a plugin without proxy support, keep the direct path with a gateway warning.
+
+### Fixed
+
+- **Several devices sharing one serial port corrupted each other's traffic**
+  (on Linux this showed up as "only one meter can be read"): the serial
+  transports of DL/T 645, FINS (Host Link), Mitsubishi MC (4C Format5) and Modbus
+  RTU now share one handle and one bus lock per physical port through the SDK's
+  `driversdk/serialbus`. Previously every session opened its own handle, so two
+  readers on the same tty split the answer bytes (the "received 7/9 bytes"
+  fragments in the log), lost the select race with `EAGAIN` ("resource
+  temporarily unavailable"), and either side's `Close` restored termios under
+  the other — producing alternating timeouts and the "connection closed /
+  connected" churn. There is now exactly one handle per port and it is closed
+  only by the last session; port names are canonicalized with
+  `driver.CanonicalSerialPort` (Windows case / `\\.\`, Linux symlinks).
+- A different baud rate / data bits / stop bits / parity on the same port is now
+  an explicit configuration error instead of silently opening a second handle
+  and reproducing the same failure (devices on one bus must share parameters).
+- Read timeouts no longer mark the shared handle dead — they only mean this
+  request got no answer; only real link I/O errors force a new handle, so one
+  offline device no longer drags the whole bus into reconnect churn.
+- Modbus RTU's `IdleTimeout` is disabled for shared handles: it used to close
+  the port (restoring termios) behind the back of sessions still talking to
+  other slaves. The temporary connection used by "test connection" now goes
+  through the same registry and shares an existing handle instead of opening a
+  second one (`Access is denied` on Windows).
+
+### Changed
+
+- Depends on SDK **v0.5.0** (`driver.CanonicalSerialPort` and
+  `driversdk/serialbus`). Wire `APIVersion` stays 4, so old gateways need no
+  upgrade; plugins must be rebuilt against the new SDK.
+
 ## [0.4.1] - 2026-11-19
 
 ### 新增

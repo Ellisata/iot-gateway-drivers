@@ -37,7 +37,7 @@ func (p *fakePort) Read(b []byte) (int, error) {
 // 而迟到的应答只可能在某轮没按时收到应答时才在途 —— 那种轮次会 MarkDirty。
 func TestSerialDrainSkipsCleanRounds(t *testing.T) {
 	port := &fakePort{}
-	c := &serialClient{port: port, connected: true}
+	c := newTestSerialClient(port)
 
 	// 干净轮次（含刚连上的第一轮）：不读，省下空等
 	c.Drain()
@@ -63,7 +63,7 @@ func TestSerialDrainSkipsCleanRounds(t *testing.T) {
 // 串口 Dirty 后，Drain 要把残留读到读不出为止（最多 serialDrainRounds 轮）。
 func TestSerialDrainConsumesResidue(t *testing.T) {
 	port := &fakePort{chunk: []byte{1, 2, 3}}
-	c := &serialClient{port: port, connected: true}
+	c := newTestSerialClient(port)
 
 	c.MarkDirty()
 	c.Drain()

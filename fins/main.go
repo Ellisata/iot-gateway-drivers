@@ -232,7 +232,9 @@ func meta() driversdk.Meta {
 				// 串口独占串行总线：采集引擎据此整轮持设备锁，
 				// 保证 RS-485 上的帧不被交错。其余三个为 false。
 				SerialExclusive: true,
-				Description:     "Omron Host Link 串口（FINS over serial）",
+				// 支持网关代理串口：与其它插件进程共用物理口时由网关持有唯一句柄。
+				SerialProxy: true,
+				Description: "Omron Host Link 串口（FINS over serial）",
 				// 写路径与读路径共用同一套 Host Link 封帧（0x0102）。
 				Writable: true,
 				FormJSON: json.RawMessage(formSerial),

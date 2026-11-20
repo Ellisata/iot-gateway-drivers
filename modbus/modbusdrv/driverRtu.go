@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	goburrowModbus "github.com/goburrow/modbus"
-
 	"github.com/Ellisata/iot-gateway-sdk/driver"
 )
 
@@ -35,6 +33,25 @@ type modbusRTUDriver struct {
 
 	// warns 日志去重（读路径的坏地址与瞬时状态各一条，每轮都成立）
 	warns warnSet
+
+	// serialOpener 由网关在启用串口代理时注入（见 driver.SerialTransportProvider）。
+	// nil = 直接打开本机串口。
+	serialOpener driver.SerialTransportOpener
+}
+
+var _ driver.SerialTransportProvider = (*modbusRTUDriver)(nil)
+
+// SetSerialTransport 见 driver.SerialTransportProvider。
+func (d *modbusRTUDriver) SetSerialTransport(opener driver.SerialTransportOpener) {
+	d.mu.Lock()
+	d.serialOpener = opener
+	d.mu.Unlock()
+}
+
+func (d *modbusRTUDriver) serialOpen() driver.SerialTransportOpener {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.serialOpener
 }
 
 // SerialExclusive 标记 RTU 驱动独占串口总线。
@@ -110,8 +127,8 @@ func (d *modbusRTUDriver) Connect(protocolJSON string) error {
 	}
 	d.mu.Unlock()
 
-	client, err := NewModbusRTUClient(cfg.ComPort, cfg.BaudRate, cfg.DataBits,
-		cfg.StopBits, cfg.Parity, cfg.UnitID, timeout)
+	client, err := newModbusRTUClient(cfg.ComPort, cfg.BaudRate, cfg.DataBits,
+		cfg.StopBits, cfg.Parity, cfg.UnitID, timeout, d.serialOpen())
 	if err != nil {
 		return fmt.Errorf("modbus rtu: connect %s failed: %w", cfg.ComPort, err)
 	}
@@ -157,25 +174,18 @@ func (d *modbusRTUDriver) Ping(protocolJSON string) error {
 		return nil
 	}
 
-	// Step 1: 串口连通性检查（打开串口）
-	handler := goburrowModbus.NewRTUClientHandler(cfg.ComPort)
-	handler.BaudRate = cfg.BaudRate
-	handler.DataBits = cfg.DataBits
-	handler.StopBits = cfg.StopBits
-	handler.Parity = cfg.Parity
-	handler.SlaveId = cfg.UnitID
-	handler.Timeout = timeout
-	handler.IdleTimeout = timeout * 2
-
-	if err := handler.Connect(); err != nil {
-		return fmt.Errorf("modbus rtu: ping %s failed (serial): %w%s",
-			cfg.ComPort, err, driver.SerialOpenFailureHint)
+	// 临时连接：走同一张端口注册表。若另一台设备的会话正占着这个口（同一条
+	// RS-485 上的另一个从站），直接共享它的句柄，而不是再开一个 —— 二次打开
+	// 在 Windows 下会报 Access is denied，在 Linux 下则会让两个读端瓜分字节。
+	client, err := newModbusRTUClient(cfg.ComPort, cfg.BaudRate, cfg.DataBits,
+		cfg.StopBits, cfg.Parity, cfg.UnitID, timeout, d.serialOpen())
+	if err != nil {
+		return fmt.Errorf("modbus rtu: ping %s failed (serial): %w", cfg.ComPort, err)
 	}
-	defer handler.Close()
+	defer client.Close()
 
-	// Step 2: Modbus 协议层握手（发送读取请求，验证设备可达）
-	client := goburrowModbus.NewClient(handler)
-	if _, err := client.ReadHoldingRegisters(0, 1); err != nil {
+	// Modbus 协议层握手（发送读取请求，验证设备可达）
+	if err := client.Ping(); err != nil {
 		return fmt.Errorf("modbus rtu: ping %s failed (device no response): %w",
 			cfg.ComPort, err)
 	}

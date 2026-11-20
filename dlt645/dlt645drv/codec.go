@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/goburrow/serial"
+
+	"github.com/Ellisata/iot-gateway-sdk/driversdk/serialproxy"
 )
 
 // 帧定界与数据域偏移
@@ -369,6 +371,7 @@ func readResponse(t dlt645Transport, cfg *DLT645Config, addr [6]byte, deadline t
 // isTimeoutErr 判断错误是否为读超时（串口与 TCP 各自的超时错误）。
 func isTimeoutErr(err error) bool {
 	return errors.Is(err, serial.ErrTimeout) ||
+		errors.Is(err, serialproxy.ErrTimeout) ||
 		errors.Is(err, os.ErrDeadlineExceeded)
 }
 

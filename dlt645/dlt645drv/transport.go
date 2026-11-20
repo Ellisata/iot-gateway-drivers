@@ -6,6 +6,8 @@ package dlt645
 import (
 	"fmt"
 	"time"
+
+	"github.com/Ellisata/iot-gateway-sdk/driver"
 )
 
 // dlt645Transport 底层字节流传输。
@@ -45,10 +47,13 @@ type dlt645Transport interface {
 }
 
 // newTransport 按配置的传输层创建传输实例。
-func newTransport(cfg *DLT645Config) (dlt645Transport, error) {
+//
+// openSerial 非 nil 时串口字节流来自网关代理（driver.SerialTransportProvider），
+// 否则直接打开本机串口。TCP 传输不使用它。
+func newTransport(cfg *DLT645Config, openSerial driver.SerialTransportOpener) (dlt645Transport, error) {
 	switch cfg.Transport {
 	case TransportSerial:
-		return newSerialClient(cfg)
+		return newSerialClient(cfg, openSerial)
 	case TransportTCP:
 		return newTCPClient(cfg)
 	default:
