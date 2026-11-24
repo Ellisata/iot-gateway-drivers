@@ -67,6 +67,52 @@ func ParseReadResult(raw []byte, dataType, byteOrder, wordOrder string) (any, er
 	return dt.Decode(data, order)
 }
 
+// ParseReadResultWithLayout 按**点位级布局**解析（layout 非空时使用）。
+//
+// 与 ParseReadResult 的区别：后者按设备级 byteOrder/wordOrder 两轴解释，
+// 语义是「整个值反转 + 寄存器对交换」，64 位下无法表达字序整体反转等约定；
+// 本函数按 layoutPermutations 的表逐字节重排，16/32/64 位各有自己的一组
+// 布局名（见 layout.go）。layout 为空表示跟随设备配置，调用方应改走
+// ParseReadResult。
+func ParseReadResultWithLayout(raw []byte, dataType, layout string) (any, error) {
+	if len(raw) == 0 {
+		return nil, fmt.Errorf("modbus parser: empty raw data")
+	}
+
+	dt, ok := lookupType(dataType)
+	if !ok {
+		return nil, fmt.Errorf("modbus parser: unsupported data type: %q", dataType)
+	}
+
+	// ---- Modbus 特有预处理 ----
+	switch dt.Name {
+	case typeNameString:
+		order, ok := stringLayoutOrder(layout)
+		if !ok {
+			return nil, fmt.Errorf("modbus parser: 字符串点位只支持 ABCD / BADC 布局，得到 %q", layout)
+		}
+		return parseString(raw, order), nil
+	case typeNameBool:
+		return raw[len(raw)-1]&0x01 != 0, nil
+	}
+
+	perm, ok := layoutPermutation(layout, dt.Size)
+	if !ok {
+		return nil, fmt.Errorf("modbus parser: 布局 %q 不适用于 %s（%d 字节）", layout, dataType, dt.Size)
+	}
+	if len(raw) < dt.Size {
+		return nil, fmt.Errorf("modbus parser: %s needs %d bytes, got %d", dataType, dt.Size, len(raw))
+	}
+
+	// 按排列表把线上字节还原成规范大端序列，再交给类型解码函数
+	// （类型表的 Decode 在收到 BigEndian 时按大端解释整段值）。
+	data := make([]byte, dt.Size)
+	for i, p := range perm {
+		data[i] = raw[p]
+	}
+	return dt.Decode(data, binary.BigEndian)
+}
+
 // FormatValue 将解析后的值格式化为字符串（用于存储和展示）。
 func FormatValue(v any, dataType string) string {
 	dt, ok := lookupType(dataType)

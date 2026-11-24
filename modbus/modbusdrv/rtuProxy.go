@@ -91,10 +91,10 @@ func (b *rtuProxyBackend) Client(slave byte) goburrowModbus.Client {
 	return b.client
 }
 
-func (b *rtuProxyBackend) Alive() bool   { return b.bus.Alive() }
-func (b *rtuProxyBackend) MarkBroken()   { b.bus.MarkBroken() }
-func (b *rtuProxyBackend) Refs() int     { return b.bus.Refs() }
-func (b *rtuProxyBackend) Close() error  { return b.bus.Release() }
+func (b *rtuProxyBackend) Alive() bool  { return b.bus.Alive() }
+func (b *rtuProxyBackend) MarkBroken()  { b.bus.MarkBroken() }
+func (b *rtuProxyBackend) Refs() int    { return b.bus.Refs() }
+func (b *rtuProxyBackend) Close() error { return b.bus.Release() }
 
 // rtuProxyTransporter 用代理字节流实现 modbus.Transporter。
 //

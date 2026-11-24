@@ -6,6 +6,50 @@ All notable changes to the official iot-gateway drivers are documented here.
 Chinese entries come first under each release, followed by English entries.
 This repository is versioned independently from the gateway and the SDK.
 
+## [0.6.0] - 2026-11-24
+
+### 新增
+
+- Modbus（TCP / RTU）：点位级字节/字排列布局 `ByteOrderLayout`（16 位
+  `ABCD` / `BADC`，32 位 `ABCD` / `CDAB` / `BADC` / `DCBA`，64 位 `ABCDEFGH` /
+  `CDABGHEF` / `BADCFEHG` / `HGFEDCBA` / `GHEFCDAB`），读写共用同一份；空串
+  沿用设备级 `byteOrder` / `wordOrder`，存量点位行为不变。
+
+### 修复
+
+- S7：类型宽度超过地址声明宽度（如 `DB1.DBW0` 配 Float）被设备拒绝时，按声明
+  宽度探读一次：读得通改判 `QualityBadParse`（「解析失败」），不再误报
+  `QualityBadAddress`（「地址无效」）；读不通维持原判。探读只发生在已确认读不到
+  的单点上。
+
+### 变更
+
+- 依赖 SDK **v0.6.0**。线协议 `APIVersion` 4 → 5，新旧插件不兼容：需同步升级
+  网关并重编全部插件，新插件在旧网关上握手即被拒绝。
+
+### Added
+
+- Modbus (TCP / RTU): point-level byte/word layout `ByteOrderLayout` — 16-bit
+  `ABCD` / `BADC`; 32-bit `ABCD` / `CDAB` / `BADC` / `DCBA`; 64-bit `ABCDEFGH` /
+  `CDABGHEF` / `BADCFEHG` / `HGFEDCBA` / `GHEFCDAB`. Reads and writes share the
+  same permutation; an empty string keeps the device-level `byteOrder` /
+  `wordOrder`, so existing points behave as before.
+
+### Fixed
+
+- S7: when a data type is wider than the address suffix (e.g. `DB1.DBW0` as
+  Float) and the device rejects the read, probe once at the declared width: a
+  successful probe reclassifies the point as `QualityBadParse` ("parse
+  failure") instead of the misleading `QualityBadAddress` ("invalid address");
+  a failed probe keeps the old verdict. Only already-confirmed bad single
+  points are probed.
+
+### Changed
+
+- Depends on SDK **v0.6.0**. Wire `APIVersion` goes 4 → 5; old and new plugins
+  are incompatible — upgrade the gateway and rebuild every plugin, as a new
+  plugin is rejected at handshake on an old gateway.
+
 ## [0.5.0] - 2026-11-20
 
 ### 修复

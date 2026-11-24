@@ -203,7 +203,14 @@ func parseRegisterResults(results []byte, addrs []driver.DeviceAddress, cfg *Mod
 		}
 
 		raw := results[offset : offset+bytesLen]
-		parsed, err := ParseReadResult(raw, addr.DataType, cfg.ByteOrder, cfg.WordOrder)
+		// 点位级布局优先；空串回落设备级 byteOrder/wordOrder 两轴（见 layout.go）。
+		var parsed any
+		var err error
+		if addr.ByteOrderLayout != "" {
+			parsed, err = ParseReadResultWithLayout(raw, addr.DataType, addr.ByteOrderLayout)
+		} else {
+			parsed, err = ParseReadResult(raw, addr.DataType, cfg.ByteOrder, cfg.WordOrder)
+		}
 		quality := driver.QualityGood
 		value := ""
 		if err != nil {

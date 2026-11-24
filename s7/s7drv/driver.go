@@ -113,11 +113,14 @@ type s7Plan struct {
 	// 这类计划按 degradedPlanTTL 过期 —— 不设 TTL 的话，设备侧后来建出来的 DB
 	// 会永远拿不回来（它已经被排除在所有区间之外了）。
 	degraded bool
-	// bad 已知读不到的地址 → 质量码（恒为 QualityBadAddress）。两个来源：
+	// bad 已知读不到/坏掉的地址 → 质量码。三个来源：
 	//   ① **本地解析失败**（partitionBadAddrs 挑出来的，一个字节都没上过线）——
-	//      非降级计划里就有它，是纯函数式的集合，没有 TTL；
-	//   ② **设备已确认不存在**（对半降级到单点仍被拒）—— 只在降级计划里有。
-	// 两者都必须缓存：这些地址已被摘出计划、不再参与任何一次解析，不带进来的话此后
+	//      非降级计划里就有它，是纯函数式的集合，没有 TTL；标 QualityBadAddress；
+	//   ② **设备已确认不存在**（对半降级到单点仍被拒）—— 只在降级计划里有，
+	//      标 QualityBadAddress；
+	//   ③ **设备确认读取越界、但按地址声明宽度探读是通的**（类型宽度 > 地址宽度，
+	//      见 classifyBadSingle）—— 只在降级计划里有，标 QualityBadParse。
+	// 三者都必须缓存：这些地址已被摘出计划、不再参与任何一次解析，不带进来的话此后
 	// 每轮的质量码都会退化成"未归类"（QualityBad），"这个地址坏"在数据上就看不出来
 	// （点位级报警按连续 N 轮判定时永远触发不了）。
 	// 降级计划里的 bad 生命周期与 ranges 一致（同一条 TTL，地址回到合并区间重试时它
@@ -309,15 +312,17 @@ func markQuality(byID map[string]driver.ReadResult, id string, quality int) {
 	byID[id] = r
 }
 
-// badQualities 取出本轮结果里**已确认在设备上不存在**的点位及其质量码，供回写计划缓存。
+// badQualities 取出本轮结果里**已摘出计划**的点位及其质量码，供回写计划缓存。
 //
-// 只取 address：comms 是瞬时的、点位仍留在计划里下轮重试，parse 是本地解码问题、
-// 下一轮还会被重读 —— 只有 address 的点位被摘出了计划，不缓存的话此后每轮它的
-// 质量码都会退化成"未归类"（见 s7Plan.bad）。
+// 取 address 与 parse 两种：comms 是瞬时的、点位仍留在计划里下轮重试。parse 的
+// 大多数来源（区间内的解码失败）确实下轮还会被重读，缓存也无妨 —— 重读会整条
+// 覆盖预填；但"拆到单点确认后改判的 parse"（类型宽度超过地址声明宽度，见
+// classifyBadSingle）与 address 一样已被摘出计划，不缓存的话此后每轮它的质量码
+// 都会退化成"未归类"（见 s7Plan.bad）。
 func badQualities(byID map[string]driver.ReadResult) map[string]int {
 	var bad map[string]int
 	for id, r := range byID {
-		if r.Quality != driver.QualityBadAddress {
+		if r.Quality != driver.QualityBadAddress && r.Quality != driver.QualityBadParse {
 			continue
 		}
 		if bad == nil {
@@ -583,16 +588,33 @@ func (d *s7Driver) degradeBadSpan(reader s7RangeReader, r *S7Range,
 		// 拆到单点仍被拒。保持 Quality=0（预填骨架），从计划里摘掉 ——
 		// 留在计划里就是每轮为它重付一次必然失败的往返。
 		//
-		// 是 QualityBadAddress 而非 QualityBadComms：走到这里意味着设备明确回"这个地址/对象不存在"
-		// 且对半降到单点仍被拒，即**地址本身**的问题（没建的 DB、越界的偏移），
-		// 设备是好的 —— 它不会自己恢复，下一次仍会被摘在计划之外。
+		// 默认是 QualityBadAddress 而非 QualityBadComms：走到这里意味着设备明确回
+		// "这个地址/对象不存在"且对半降到单点仍被拒，即**地址本身**的问题
+		// （没建的 DB、越界的偏移），设备是好的 —— 它不会自己恢复，下一次仍会被
+		// 摘在计划之外。
+		//
+		// 但最常见的现场配置错误会让"地址本身没问题"却走到这里：类型字节数 >
+		// 地址后缀宽度（如 DB1.DBW0 配 Float），跨度被类型撑到 4 字节、越过了 DB
+		// 的末尾。此时按地址声明的 2 字节读是通的 —— 探一次就能把"类型不匹配"与
+		// "地址不存在"分开，前者标 QualityBadParse（页面「解析失败」），
+		// 不再把用户引向改地址。
 		name := pts[0].id
 		if a := addrByID[pts[0].id]; a != nil {
 			name = a.Name
 		}
-		markQuality(byID, pts[0].id, driver.QualityBadAddress)
-		d.warnOnce("bad:"+pts[0].id,
-			"address %q (id=%s) unreadable, mark quality=0: %v", name, pts[0].id, cause)
+		quality, probeNote, err := d.classifyBadSingle(reader, pts[0], addrByID, st.b)
+		if err != nil {
+			return err
+		}
+		markQuality(byID, pts[0].id, quality)
+		if quality == driver.QualityBadParse {
+			d.warnOnce("badtype:"+pts[0].id,
+				"address %q (id=%s) unreadable as configured (%v): %s — mark quality=bad-parse, check data type vs address width",
+				name, pts[0].id, cause, probeNote)
+		} else {
+			d.warnOnce("bad:"+pts[0].id,
+				"address %q (id=%s) unreadable, mark quality=bad-address: %v", name, pts[0].id, cause)
+		}
 		return nil
 	}
 	mid := len(pts) / 2
@@ -600,6 +622,55 @@ func (d *s7Driver) degradeBadSpan(reader s7RangeReader, r *S7Range,
 		return err
 	}
 	return d.degradeSpan(reader, r, pts[mid:], addrByID, byID, st)
+}
+
+// classifyBadSingle 给"拆到单点仍被拒"的点位定性：地址不存在，还是类型/宽度不匹配。
+//
+// 只有一种点位需要探读：类型把读取跨度撑得比地址后缀声明的宽度更大
+// （非位地址、非 STRING，Span > Width）。这是 S7 上最常见的配置错误形态 ——
+// 例如 DB1.DBW0（声明 2 字节）配 Float（4 字节），驱动会按 4 字节去读；
+// DB 恰好只有 2 字节时整段被设备拒绝，但按地址声明的 2 字节读是通的。
+//
+// 探读一次声明宽度即可区分两者：
+//   - 读得通 → 地址在设备上存在，问题在类型宽度 → QualityBadParse（页面「解析失败」）
+//   - 读不通 → 维持 QualityBadAddress（地址/DB 真的不存在）
+//
+// 探读只在**已确认读不到**的单点上发生（降级路径，点位数极少），且占用降级的
+// 请求预算；预算耗尽、或探读区间越过可寻址上限时不做探读，退回原来的地址级判定。
+// 链路错误按与降级其它路径相同的方式上抛，由采集引擎判重连。
+func (d *s7Driver) classifyBadSingle(reader s7RangeReader, p rangePoint,
+	addrByID map[string]*driver.DeviceAddress, b *isolateBudget) (int, string, error) {
+
+	a := addrByID[p.id]
+	if a == nil || p.addr.IsBit() || p.addr.IsString ||
+		p.addr.Width <= 0 || p.addr.Span <= p.addr.Width {
+		return driver.QualityBadAddress, "", nil
+	}
+	end := p.addr.ByteOffset + p.addr.Width
+	if end > maxS7ByteAddr || !b.take() {
+		return driver.QualityBadAddress, "", nil
+	}
+
+	buf := make([]byte, p.addr.Width)
+	err := reader.readRange(S7Range{
+		Area:        p.addr.Area,
+		DB:          p.addr.DB,
+		StartOffset: p.addr.ByteOffset,
+		EndOffset:   end,
+	}, buf)
+	if err == nil {
+		// 非位、非 STRING 的 Span 就是 max(地址宽度, 类型字节数)，走到这里
+		// 前者更小，所以 Span 即类型字节数。
+		return driver.QualityBadParse, fmt.Sprintf(
+			"type %s needs %d bytes but the address declares %d; the %d-byte read was rejected while the declared bytes are readable",
+			a.DataType, p.addr.Span, p.addr.Width, p.addr.Span), nil
+	}
+	if isConnErr(err) {
+		reader.MarkDisconnected()
+		return 0, "", fmt.Errorf("s7: network read probe [%d, %d) failed: %w",
+			p.addr.ByteOffset, end, err)
+	}
+	return driver.QualityBadAddress, "", nil
 }
 
 // isolateBudget 对半降级的预算，**单次 Read 内共享**。

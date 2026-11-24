@@ -133,14 +133,22 @@ func writeOne(prefix string, w modbusWriteTransport, req driver.WriteRequest, cf
 		res.Message = fmt.Sprintf("invalid %s value %q: %v", req.DataType, req.Value, err)
 		return res, nil
 	}
-	raw, err := dt.Encode(val, parseByteOrder(cfg.ByteOrder))
+	// 与读路径同一份分支：点位级布局优先，空串回落设备级两轴。
+	var raw []byte
+	if req.ByteOrderLayout != "" {
+		raw, err = encodeWithLayout(val, dt, req.ByteOrderLayout)
+	} else {
+		raw, err = dt.Encode(val, parseByteOrder(cfg.ByteOrder))
+		if err == nil {
+			raw = applyWriteWordOrder(raw, dt.Size, cfg.WordOrder)
+			raw = padRegisterBytes(raw, cfg.ByteOrder)
+		}
+	}
 	if err != nil {
 		res.Code = driver.WriteCodeBadValue
 		res.Message = fmt.Sprintf("encode %s value %q: %v", req.DataType, req.Value, err)
 		return res, nil
 	}
-	raw = applyWriteWordOrder(raw, dt.Size, cfg.WordOrder)
-	raw = padRegisterBytes(raw, cfg.ByteOrder)
 	if len(raw) < 2 || len(raw)%2 != 0 {
 		res.Code = driver.WriteCodeBadValue
 		res.Message = fmt.Sprintf("encoded %s value has invalid register length %d", req.DataType, len(raw))

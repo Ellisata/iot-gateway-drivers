@@ -162,8 +162,8 @@ func meta() driversdk.Meta {
 				// 由网关持有唯一句柄（driver.SerialTransportProvider）。
 				SerialProxy:    true,
 				Description:    "DL/T 645 电能表 串口（RS-485 / RS-232）",
-				FormJSON:        json.RawMessage(formSerial),
-				PointDiscovery:  dlt645drv.PointDiscovery(),
+				FormJSON:       json.RawMessage(formSerial),
+				PointDiscovery: dlt645drv.PointDiscovery(),
 			},
 			{
 				Name: protocolTCP,

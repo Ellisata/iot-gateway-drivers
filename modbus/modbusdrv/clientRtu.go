@@ -56,10 +56,10 @@ func (b *rtuLocalBackend) Client(slave byte) goburrowModbus.Client {
 	return goburrowModbus.NewClient(handler)
 }
 
-func (b *rtuLocalBackend) Alive() bool     { return b.h.Alive() }
-func (b *rtuLocalBackend) MarkBroken()     { b.h.MarkBroken() }
-func (b *rtuLocalBackend) Refs() int       { return b.h.Refs() }
-func (b *rtuLocalBackend) Close() error    { return b.h.Release() }
+func (b *rtuLocalBackend) Alive() bool  { return b.h.Alive() }
+func (b *rtuLocalBackend) MarkBroken()  { b.h.MarkBroken() }
+func (b *rtuLocalBackend) Refs() int    { return b.h.Refs() }
+func (b *rtuLocalBackend) Close() error { return b.h.Release() }
 
 // ModbusRTUClient Modbus RTU 串口客户端封装
 //
