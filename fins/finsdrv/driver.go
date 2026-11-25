@@ -125,8 +125,8 @@ type finsPlan struct {
 	// 每轮的质量码都会退化成“未归类”，"这个地址坏"在数据上就看不出来（点位级报警按
 	// 连续 N 轮判定时永远触发不了）。
 	// 降级计划里的 bad 生命周期与 ranges 一致（同一条 TTL）；非降级计划的 bad 随
-	// RangeSig 变化自然重算 —— 签名含 Name 与 DataType，把地址或类型改对就换了新计划，
-	// 这正是①不需要 TTL 的原因。
+	// RangeSig 变化自然重算 —— 签名含 Name / DataType / ByteOrderLayout，把地址、
+	// 类型或点位级布局改对就换了新计划，这正是①不需要 TTL 的原因。
 	bad map[string]int
 	at  time.Time
 }
@@ -790,7 +790,14 @@ func parseRangeResults(addrByID map[string]*driver.DeviceAddress, r *FINSRange, 
 		}
 
 		raw := data[offset : offset+bytesLen]
-		val, err := ParseFINSValue(raw, faddr, a.DataType, cfg)
+		// 点位级布局优先；空串回落设备级 byteOrder/wordOrder 两轴（见 parser.go）。
+		var val any
+		var err error
+		if a.ByteOrderLayout != "" {
+			val, err = ParseFINSValueWithLayout(raw, faddr, a.DataType, a.ByteOrderLayout)
+		} else {
+			val, err = ParseFINSValue(raw, faddr, a.DataType, cfg)
+		}
 		quality := driver.QualityGood
 		value := ""
 		if err != nil {

@@ -40,7 +40,7 @@ func TestParseReadResultLayout32(t *testing.T) {
 	}
 }
 
-// TestParseReadResultLayout64 64 位布局：五个布局名各自对应一种真实现场约定，
+// TestParseReadResultLayout64 64 位布局：六个布局名各自对应一种真实现场约定，
 // 以 float64 位模式 0x0123456789ABCDEF（规范大端 01 23 45 67 89 AB CD EF）为例。
 func TestParseReadResultLayout64(t *testing.T) {
 	want := math.Float64frombits(0x0123456789ABCDEF)
@@ -53,6 +53,7 @@ func TestParseReadResultLayout64(t *testing.T) {
 		{LayoutBADCFEHG, []byte{0x23, 0x01, 0x67, 0x45, 0xAB, 0x89, 0xEF, 0xCD}},
 		{LayoutHGFEDCBA, []byte{0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01}},
 		{LayoutGHEFCDAB, []byte{0xCD, 0xEF, 0x89, 0xAB, 0x45, 0x67, 0x01, 0x23}},
+		{LayoutDCBAHGFE, []byte{0x67, 0x45, 0x23, 0x01, 0xEF, 0xCD, 0xAB, 0x89}},
 	}
 	for _, c := range cases {
 		t.Run(c.layout, func(t *testing.T) {

@@ -266,6 +266,10 @@ func meta() driversdk.Meta {
 		},
 		Scope:       pluginScope,
 		Description: "Omron FINS",
+		// 未发布：点位级字节/字排列布局 ByteOrderLayout（16/32/64 位数值与
+		// BCD/LBCD/Date），读写共用；空串沿用设备级 byteOrder/wordOrder。
+		// 字符串、bool、8 位类型与位地址不参与（保存侧同样拒绝其非空布局）。
+		//
 		// 1.2.2：本地就解析不出来的地址不再让整批 Read 失败 —— 它在规划前被拆出去，
 		// 只让那一个点位标 QualityBadAddress（报警「地址无效」）。此前这种地址会让
 		// Read 报错，采集侧据此把**在线**的设备判为断联并推通知。

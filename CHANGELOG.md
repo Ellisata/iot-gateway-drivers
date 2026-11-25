@@ -6,6 +6,30 @@ All notable changes to the official iot-gateway drivers are documented here.
 Chinese entries come first under each release, followed by English entries.
 This repository is versioned independently from the gateway and the SDK.
 
+## [0.6.1] - 2026-11-25
+
+### 新增
+
+- FINS（UDP / TCP / Serial / HostLinkTCP）：点位级字节/字排列布局
+  `ByteOrderLayout`，16/32/64 位数值与 BCD/LBCD/Date 支持；空串沿用设备级
+  `byteOrder` / `wordOrder`。字符串、bool 与 8 位类型（以及任何位地址）没有
+  点位级布局，只能跟随设备配置。读写共用同一份布局，布局参与 `RangeSig`，
+  修改后区间计划缓存自动重算。
+- 点位级排列表下沉到 `internal/layout`，Modbus 与 FINS 共用；64 位新增
+  `DCBAHGFE`（每个 16 位字内交换字节，再交换相邻字对）。
+
+### Added
+
+- FINS (UDP / TCP / Serial / HostLinkTCP): point-level byte/word layout
+  `ByteOrderLayout` for 16/32/64-bit numeric types plus BCD/LBCD/Date; an
+  empty string keeps the device-level `byteOrder` / `wordOrder`. Strings,
+  bool, 8-bit types and any bit address have no point-level layout and follow
+  the device settings only. Reads and writes share the same layout, which is
+  part of `RangeSig`, so changing it invalidates the range plan cache.
+- The point-layout permutation table now lives in `internal/layout` and is
+  shared by Modbus and FINS; 64-bit gains `DCBAHGFE` (swap bytes within each
+  16-bit word, then swap adjacent word pairs).
+
 ## [0.6.0] - 2026-11-24
 
 ### 新增

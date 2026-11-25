@@ -683,6 +683,8 @@ func (sc *pScanner) buildPoint(idx int, firstWord uint16, data []byte) driver.Di
 
 	addr := FINSAddress{Area: sc.opt.area, Word: addrWord, Bit: bit}
 	internal := sc.opt.width.internalType()
+	// 点位扫描产出的是候选地址、没有 per-point DeviceAddress，因此**不**应用
+	// 点位级布局：这里按设备级配置渲染采样值，零值判定本身也不受排列影响。
 	v, err := ParseFINSValue(raw, addr, internal, sc.cfg)
 	if err != nil {
 		// 解析失败不改判"读到了"：地址确实是读到了，只是值渲染不出来。

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	layoutpkg "github.com/Ellisata/iot-gateway-drivers/internal/layout"
 	"github.com/Ellisata/iot-gateway-drivers/internal/writeval"
 	"github.com/Ellisata/iot-gateway-sdk/driver"
 )
@@ -121,19 +122,11 @@ func writeFINSOne(w finsAreaWriter, req driver.WriteRequest, cfg *FINSConfig) (d
 		res.Code, res.Message = driver.WriteCodeBadValue, err.Error()
 		return res, nil
 	}
-	raw, err := dt.Encode(val, parseByteOrder(cfg.ByteOrder))
+	raw, err := encodeFINSValue(val, dt, cfg, req.ByteOrderLayout)
 	if err != nil {
 		res.Code = driver.WriteCodeBadValue
 		res.Message = fmt.Sprintf("encode %s value %q: %v", req.DataType, req.Value, err)
 		return res, nil
-	}
-	if strings.EqualFold(cfg.WordOrder, WordOrderLittleEndian) {
-		switch dt.Size {
-		case 4:
-			raw = swapWords32(raw, true)
-		case 8:
-			raw = swapWords64(raw, true)
-		}
 	}
 	raw = padFINSWord(raw)
 	if len(raw) < 2 || len(raw)%2 != 0 {
@@ -148,6 +141,30 @@ func writeFINSOne(w finsAreaWriter, req driver.WriteRequest, cfg *FINSConfig) (d
 	res.Code = driver.WriteCodeOK
 	res.Value = writeval.Format(dt, val)
 	return res, nil
+}
+
+// encodeFINSValue 按点位级布局或设备级两轴把值编码成线上字节。
+//
+// layout 非空时**整体替代**设备级 byteOrder/wordOrder，并按排列表把规范大端
+// 字节重排；只对 2/4/8 字节类型生效。bool 在上层单独处理，单字节类型与字符串
+// 没有排列可言，一律回落设备级（保存侧同样不开放它们的点位级布局）。
+func encodeFINSValue(val any, dt *driver.DataType, cfg *FINSConfig, layout string) ([]byte, error) {
+	if layout != "" && dt.Size > 1 {
+		return layoutpkg.EncodeWithLayout(val, dt, layout)
+	}
+	raw, err := dt.Encode(val, parseByteOrder(cfg.ByteOrder))
+	if err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(cfg.WordOrder, WordOrderLittleEndian) {
+		switch dt.Size {
+		case 4:
+			raw = swapWords32(raw, true)
+		case 8:
+			raw = swapWords64(raw, true)
+		}
+	}
+	return raw, nil
 }
 
 // padFINSWord 把 1 字节类型放进 16 位字的低字节（FINS 字内大端）。

@@ -7,6 +7,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strings"
+
+	layoutpkg "github.com/Ellisata/iot-gateway-drivers/internal/layout"
 )
 
 // ParseFINSValue 将读取到的原始字节解码为指定类型的 Go 值。
@@ -14,9 +16,30 @@ import (
 // raw 为该点位所在的字数据（每字 2 字节，FINS 线上大端）。
 // 位点位（bool，地址携带 .bit）先从所在字中提取该位为 1 字节再走 bool 解码。
 //
-// byteOrder 控制字内字节序（默认大端）；wordOrder 控制 32/64 位值的字序
+// byteOrder 控制字节序（默认大端）；wordOrder 控制 32/64 位值的字序
 // （BIG_ENDIAN=高字在前，LITTLE_ENDIAN=低字在前）。
 func ParseFINSValue(raw []byte, addr FINSAddress, dataType string, cfg *FINSConfig) (any, error) {
+	return parseFINSValue(raw, addr, dataType, parseByteOrder(cfg.ByteOrder),
+		strings.EqualFold(cfg.WordOrder, WordOrderLittleEndian), "")
+}
+
+// ParseFINSValueWithLayout 按**点位级布局**解析（layout 非空时使用）。
+//
+// 布局是对整个值字节序列的排列（见 internal/layout），**整体替代**设备级的
+// byteOrder/wordOrder 两轴，不与它们叠加。空串表示跟随设备配置，调用方应改走
+// ParseFINSValue。
+//
+// 位点位、单字节类型（bool/uint8/int8）与字符串没有点位级布局：位与单字节
+// 取的是固定位置，字符串的跨字重排没有公认语义 —— 这几类一律忽略 layout，
+// 按各自的固定解码方式处理（它们本来就不受字节序影响；保存侧也按同样口径
+// 拒绝非空布局）。
+func ParseFINSValueWithLayout(raw []byte, addr FINSAddress, dataType, layout string) (any, error) {
+	return parseFINSValue(raw, addr, dataType, binary.BigEndian, false, layout)
+}
+
+// parseFINSValue 读路径的唯一解码实现。layout 为空时走设备级两轴；非空时只对
+// 2/4/8 字节类型生效，按排列表还原成规范大端后解码。
+func parseFINSValue(raw []byte, addr FINSAddress, dataType string, order binary.ByteOrder, swapWords bool, layout string) (any, error) {
 	if len(raw) == 0 {
 		return nil, fmt.Errorf("fins parser: empty raw data")
 	}
@@ -26,12 +49,9 @@ func ParseFINSValue(raw []byte, addr FINSAddress, dataType string, cfg *FINSConf
 		return nil, fmt.Errorf("fins parser: unsupported data type: %q", dataType)
 	}
 
-	order := parseByteOrder(cfg.ByteOrder)
-	swapWords := strings.ToUpper(cfg.WordOrder) == WordOrderLittleEndian
-
 	// 位点位：从 2 字节字中提取所在位。
 	// FINS 位 0..7 位于低字节（raw[1]），位 8..15 位于高字节（raw[0]），
-	// 字内位序 LSB-first。
+	// 字内位序 LSB-first。位地址没有点位级布局（见 ParseFINSValueWithLayout）。
 	if addr.IsBit() {
 		if len(raw) < 2 {
 			return nil, fmt.Errorf("fins parser: bool needs a word (2 bytes), got %d", len(raw))
@@ -39,20 +59,34 @@ func ParseFINSValue(raw []byte, addr FINSAddress, dataType string, cfg *FINSConf
 		return dt.Decode([]byte{finsBitValue(raw, addr.Bit)}, order)
 	}
 
-	// 动态长度类型（STRING）：整体传给解码函数
+	// 动态长度类型（STRING）：整体传给解码函数。字符串不做点位级布局。
 	if dt.Size == 0 {
 		return dt.Decode(raw, order)
 	}
 
 	// 常规类型：截取类型大小字节。
 	// 单字节类型（uint8/int8，及无位后缀的 bool）取字的低字节——
-	// FINS 字节数据通常存于 16 位字的低字节。
+	// FINS 字节数据通常存于 16 位字的低字节。单字节没有排列可言。
 	if len(raw) < dt.Size {
 		return nil, fmt.Errorf("fins parser: %s needs %d bytes, got %d", dataType, dt.Size, len(raw))
 	}
 	data := raw[:dt.Size]
 	if dt.Size == 1 {
-		data = raw[len(raw)-1:]
+		return dt.Decode(raw[len(raw)-1:], order)
+	}
+
+	// 点位级布局：按排列表把线上字节还原成规范大端序列，再交给类型解码函数。
+	// 必须**跳过**下面的字序交换与设备字节序，否则会应用两次。
+	if layout != "" {
+		perm, ok := layoutpkg.Permutation(layout, dt.Size)
+		if !ok {
+			return nil, fmt.Errorf("fins parser: layout %q not applicable to %s (%d bytes)", layout, dataType, dt.Size)
+		}
+		canonical := make([]byte, dt.Size)
+		for i, p := range perm {
+			canonical[i] = data[p]
+		}
+		return dt.Decode(canonical, binary.BigEndian)
 	}
 
 	// 32/64 位类型：按字序交换（相邻 16 位字对交换）
